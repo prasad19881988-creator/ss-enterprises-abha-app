@@ -1,508 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SS ENTERPRISES — ABHA Portal & Field Tracking</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b0f19">
-
-  <!-- Leaflet CSS for Maps -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #0b0f19; color: #f3f4f6; padding-bottom: 70px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS Enterprises | Work Dashboard</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    /* Header */
-    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.1rem; color: #f59e0b; }
-    .brand img { height: 32px; border-radius: 6px; }
-    .user-badge { font-size: 0.85rem; background: #1f2937; padding: 6px 12px; border-radius: 20px; color: #10b981; border: 1px solid #374151; }
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --bg-color: #f8f9fa;
+            --text-main: #2b2d42;
+            --text-muted: #8d99ae;
+        }
 
-    /* Layout Containers */
-    .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
-    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-    .card-title { font-size: 1.1rem; font-weight: 600; color: #f3f4f6; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
 
-    /* Form Inputs & Buttons */
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-size: 0.85rem; color: #9ca3af; margin-bottom: 6px; }
-    input, select, textarea { width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.2s; }
-    input:focus, select:focus { border-color: #3b82f6; }
-    
-    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
-    .btn-success { background: linear-gradient(135deg, #059669, #047857); color: white; }
-    .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-    .btn-warning { background: linear-gradient(135deg, #d97706, #b45309); color: white; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
 
-    /* Map Box */
-    #map { height: 380px; width: 100%; border-radius: 10px; border: 1px solid #374151; margin-top: 10px; }
+        /* Sidebar Design */
+        .sidebar {
+            width: 260px;
+            background: #ffffff;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+        }
 
-    /* Tables */
-    .table-responsive { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 10px; }
-    th { background: #1f2937; color: #9ca3af; padding: 10px; border-bottom: 1px solid #374151; }
-    td { padding: 10px; border-bottom: 1px solid #1f2937; color: #e5e7eb; }
-    
-    /* Status Badges */
-    .badge-online { background: #065f46; color: #34d399; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; }
-    .badge-offline { background: #374151; color: #9ca3af; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f2f6;
+        }
 
-    /* Floating ABHA Quick Launcher */
-    .floating-abha-btn { position: fixed; bottom: 20px; right: 20px; background: #2563eb; color: white; border: none; border-radius: 50px; padding: 14px 22px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 9999; display: flex; align-items: center; gap: 8px; }
+        .logo-area i {
+            font-size: 28px;
+            color: var(--primary);
+        }
 
-    /* Tabs */
-    .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-    .tab-btn { flex: 1; padding: 10px; background: #1f2937; border: 1px solid #374151; color: #9ca3af; border-radius: 8px; cursor: pointer; text-align: center; font-weight: 600; }
-    .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
-  </style>
+        .logo-area h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .menu-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .menu-item.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .greeting h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .greeting p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Work Profile Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-1 { background: #e0e8ff; color: var(--primary); }
+        .stat-2 { background: #e1f7e3; color: #2ecc71; }
+        
+        .stat-info h3 { font-size: 22px; margin-bottom: 2px; }
+        .stat-info p { color: var(--text-muted); font-size: 13px; }
+
+        /* Main Action Panel */
+        .action-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--primary), #4cc9f0);
+        }
+
+        .action-panel i.main-icon {
+            font-size: 50px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .action-panel h2 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+
+        .action-panel p.desc {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-launch {
+            background: var(--primary);
+            color: white;
+            padding: 18px 40px;
+            font-size: 18px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-3px);
+            background: var(--secondary);
+            box-shadow: 0 12px 25px rgba(67, 97, 238, 0.4);
+        }
+
+        /* Important Instructions */
+        .alert-box {
+            margin-top: 35px;
+            background: #fff8e6;
+            border: 1px solid #ffe8a1;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: left;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .alert-box i {
+            color: #f39c12;
+            font-size: 24px;
+            margin-top: 2px;
+        }
+
+        .alert-text h4 {
+            color: #d35400;
+            margin-bottom: 5px;
+        }
+        
+        .alert-text p {
+            font-size: 14px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; padding: 15px; flex-direction: row; justify-content: space-between; align-items: center; }
+            .logo-area { margin-bottom: 0; padding-bottom: 0; border: none; }
+            .menu-item { display: none; }
+            .main-content { padding: 20px; }
+        }
+    </style>
 </head>
 <body>
 
-  <!-- App Header -->
-  <header>
-    <div class="brand">
-      <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-      <span>SS ENTERPRISES</span>
-    </div>
-    <div id="userStatus" class="user-badge" style="display: none;">Offline</div>
-  </header>
-
-  <div class="container">
-
-    <!-- LOGIN & SIGNUP PANEL -->
-    <div id="authSection" class="card">
-      <div class="auth-tabs">
-        <div class="tab-btn active" onclick="switchAuthTab('login')">Login</div>
-        <div class="tab-btn" onclick="switchAuthTab('signup')">Staff Signup</div>
-      </div>
-
-      <!-- Login Form -->
-      <form id="loginForm" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label>Select Role</label>
-          <select id="loginRole" onchange="toggleLoginFields()">
-            <option value="employee">Field Employee</option>
-            <option value="owner">Owner / Admin</option>
-          </select>
+    <!-- Sidebar Dashboard -->
+    <div class="sidebar">
+        <div class="logo-area">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h2>SS Enterprises</h2>
         </div>
-
-        <div class="form-group">
-          <label id="idLabel">Employee ID</label>
-          <input type="text" id="loginId" placeholder="e.g., EMP101" required>
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" required>
-        </div>
-
-        <button type="submit" class="btn btn-primary">🚀 Login to Portal</button>
-      </form>
-
-      <!-- Signup Form -->
-      <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" id="signupName" placeholder="Enter full name" required>
-        </div>
-        <div class="form-group">
-          <label>Phone Number</label>
-          <input type="tel" id="signupPhone" placeholder="Enter mobile number">
-        </div>
-        <div class="form-group">
-          <label>Assigned Work Area</label>
-          <input type="text" id="signupArea" placeholder="e.g., Darbhanga Donar">
-        </div>
-        <button type="submit" class="btn btn-success">✅ Register New Employee</button>
-      </form>
+        <a href="#" class="menu-item active"><i class="fa-solid fa-house"></i> Workspace</a>
+        <a href="#" class="menu-item"><i class="fa-solid fa-chart-line"></i> Daily Reports</a>
+        <a href="#" class="menu-item"><i class="fa-solid fa-users"></i> Staff Access</a>
+        <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> Settings</a>
     </div>
 
-    <!-- EMPLOYEE DASHBOARD -->
-    <div id="employeeDashboard" style="display: none;">
-      
-      <!-- Work Control Card -->
-      <div class="card">
-        <div class="card-title">⏱️ Work Clock & GPS Tracking</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button id="startWorkBtn" onclick="startWork()" class="btn btn-success">▶️ Start Work</button>
-          <button id="closeWorkBtn" onclick="closeWork()" class="btn btn-danger" style="display: none;">⏹️ Close Work</button>
-        </div>
-        <div id="gpsStatus" style="font-size: 0.8rem; color: #9ca3af; margin-top: 10px; text-align: center;">GPS: Off</div>
-      </div>
-
-      <!-- Government ABHA Portal Launcher -->
-      <div class="card" style="border: 1px solid #2563eb;">
-        <div class="card-title">🏛️ Official Government ABHA Portal</div>
-        <p style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 12px;">Naya ABHA card banane ke liye portal open karein. Aapka app background me chalega.</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button onclick="openAbhaPortalInApp()" class="btn btn-primary">📲 Open In-App View</button>
-          <a href="https://abha.abdm.gov.in/" target="_blank" rel="noopener noreferrer" class="btn btn-warning" style="text-decoration: none;">🌐 Direct Web Link</a>
-        </div>
-      </div>
-
-      <!-- Add Customer / Work Entry Form -->
-      <div class="card">
-        <div class="card-title">📝 Add ABHA Customer Record</div>
-        <form onsubmit="handleAddCustomer(event)">
-          <div class="form-group">
-            <label>Customer Name *</label>
-            <input type="text" id="custName" placeholder="Enter customer name" required>
-          </div>
-          <div class="form-group">
-            <label>Mobile Number</label>
-            <input type="tel" id="custMobile" placeholder="10-digit mobile number">
-          </div>
-          <div class="form-group">
-            <label>ABHA Card Number</label>
-            <input type="text" id="custAbha" placeholder="e.g., 91-XXXX-XXXX-XXXX">
-          </div>
-          <div class="form-group">
-            <label>Location / Area</label>
-            <input type="text" id="custArea" placeholder="e.g., Ward 12, Darbhanga">
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="custStatus">
-              <option value="Completed">Completed (Card Generated)</option>
-              <option value="Pending">Pending / OTP Issue</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Remarks / Notes</label>
-            <textarea id="custRemarks" rows="2" placeholder="Optional notes"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">💾 Save Customer Record</button>
-        </form>
-      </div>
-
-      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Session</button>
-    </div>
-
-    <!-- OWNER / ADMIN DASHBOARD -->
-    <div id="ownerDashboard" style="display: none;">
-      
-      <!-- Real-time Field Map -->
-      <div class="card">
-        <div class="card-title">🗺️ Real-Time Employee Field Map</div>
-        <div id="map"></div>
-      </div>
-
-      <!-- Staff Status Table -->
-      <div class="card">
-        <div class="card-title">👥 Field Staff Live Status</div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Cards</th>
-                <th>Area</th>
-                <th>Last GPS Update</th>
-              </tr>
-            </thead>
-            <tbody id="employeeTableBody">
-              <!-- Dynamic Rows -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Customer Records Table -->
-      <div class="card">
-        <div class="card-title">📊 Customer ABHA Work Records</div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Staff Name</th>
-                <th>Customer Name</th>
-                <th>Mobile</th>
-                <th>ABHA Number</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="customerTableBody">
-              <!-- Dynamic Rows -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Admin</button>
-    </div>
-
-  </div>
-
-  <!-- Floating Quick ABHA Launcher (Visible when logged in) -->
-  <button id="floatingAbhaBtn" class="floating-abha-btn" onclick="openAbhaPortalInApp()" style="display: none;">
-    🏛️ Open ABHA Portal
-  </button>
-
-  <!-- External JavaScript Dependencies -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <script>
-    // System State
-    const socket = io();
-    let token = localStorage.getItem('ss_token');
-    let currentUser = JSON.parse(localStorage.getItem('ss_user') || 'null');
-    let userRole = localStorage.getItem('ss_role');
-    let watchPositionId = null;
-    let leafletMap = null;
-    let mapMarkers = {};
-
-    // Initial Load
-    window.addEventListener('DOMContentLoaded', () => {
-      registerServiceWorker();
-      if (token && currentUser && userRole) {
-        restoreSession();
-      }
-    });
-
-    // PWA Service Worker Registration
-    function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('SW Registered'))
-          .catch(err => console.log('SW Error:', err));
-      }
-    }
-
-    // Tab Switching for Login / Signup
-    function switchAuthTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      if (tab === 'login') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('signupForm').style.display = 'none';
-      } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('signupForm').style.display = 'block';
-      }
-    }
-
-    function toggleLoginFields() {
-      const role = document.getElementById('loginRole').value;
-      document.getElementById('idLabel').innerText = role === 'owner' ? 'Owner Username' : 'Employee ID';
-      document.getElementById('loginId').placeholder = role === 'owner' ? 'SS' : 'e.g., EMP101';
-    }
-
-    // Login Handler
-    function handleLogin(e) {
-      e.preventDefault();
-      const role = document.getElementById('loginRole').value;
-      const id = document.getElementById('loginId').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
-
-      socket.emit('login', { role, id, password }, res => {
-        if (!res.ok) return alert('❌ Error: ' + res.message);
+    <!-- Main Workspace -->
+    <div class="main-content">
         
-        token = res.token;
-        userRole = role;
-        currentUser = res.employee || { id: 'SS', name: 'Owner Admin' };
+        <div class="top-header">
+            <div class="greeting">
+                <h1>Work Dashboard</h1>
+                <p>Manage daily operations and ABHA generations smoothly.</p>
+            </div>
+            <!-- Dynamic Date Script -->
+            <div style="background: white; padding: 10px 20px; border-radius: 30px; font-weight: 500; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <i class="fa-regular fa-calendar" style="color: var(--primary); margin-right: 5px;"></i> 
+                <span id="currentDate"></span>
+            </div>
+        </div>
 
-        localStorage.setItem('ss_token', token);
-        localStorage.setItem('ss_role', userRole);
-        localStorage.setItem('ss_user', JSON.stringify(currentUser));
+        <!-- Work Profile Stats (Placeholder values to look professional) -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-1"><i class="fa-solid fa-id-card"></i></div>
+                <div class="stat-info">
+                    <h3>Portal Desk</h3>
+                    <p>Ready for Generation</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-2"><i class="fa-solid fa-check-double"></i></div>
+                <div class="stat-info">
+                    <h3>System Status</h3>
+                    <p>All Services Online</p>
+                </div>
+            </div>
+        </div>
 
-        restoreSession();
-      });
-    }
+        <!-- Core ABHA Generation Panel -->
+        <div class="action-panel">
+            <i class="fa-solid fa-laptop-medical main-icon"></i>
+            <h2>ABHA Card Generation Portal</h2>
+            <p class="desc">Is portal par click karte hi direct government website ek naye secure tab mein khulegi, jisse purane accounts kabhi hang nahi honge.</p>
+            
+            <!-- THE FIX: target="_blank" ensures no iframe errors -->
+            <a href="https://abha.abdm.gov.in/abha/v3/" target="_blank" class="btn-launch">
+                Launch Portal <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
 
-    // Employee Signup Handler
-    function handleSignup(e) {
-      e.preventDefault();
-      const name = document.getElementById('signupName').value;
-      const phone = document.getElementById('signupPhone').value;
-      const area = document.getElementById('signupArea').value;
+            <!-- Strict Instructions for Staff -->
+            <div class="alert-box">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="alert-text">
+                    <h4>Staff Workflow Rules</h4>
+                    <p>
+                        <b>1. Tab Close Rule:</b> Ek customer ka card download/print hone ke baad us tab (page) ko immediately band (close) kar dein.<br>
+                        <b>2. New Entry:</b> Naye customer ka kaam shuru karne ke liye wapas isi dashboard par aakar <b>"Launch Portal"</b> button par dobara click karein.
+                    </p>
+                </div>
+            </div>
+        </div>
 
-      socket.emit('signup', { name, phone, area }, res => {
-        if (!res.ok) return alert('❌ Error: ' + res.message);
-        alert(`✅ Signup Successful!\n\nYour Assigned Employee ID is: ${res.employee.id}\nDefault Password: ${res.password}`);
-        switchAuthTab('login');
-        document.getElementById('loginId').value = res.employee.id;
-      });
-    }
+    </div>
 
-    // Session Restore & Dashboard Router
-    function restoreSession() {
-      document.getElementById('authSection').style.display = 'none';
-      document.getElementById('userStatus').style.display = 'inline-block';
-      document.getElementById('floatingAbhaBtn').style.display = 'flex';
+    <script>
+        // Set current date in the header
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', dateOptions);
+    </script>
 
-      if (userRole === 'owner') {
-        document.getElementById('ownerDashboard').style.display = 'block';
-        document.getElementById('employeeDashboard').style.display = 'none';
-        document.getElementById('userStatus').innerText = '👑 Owner Admin';
-        initMap();
-        fetchState();
-      } else {
-        document.getElementById('employeeDashboard').style.display = 'block';
-        document.getElementById('ownerDashboard').style.display = 'none';
-        document.getElementById('userStatus').innerText = `👷 ${currentUser.name} (${currentUser.id})`;
-      }
-    }
-
-    // Open Government ABHA Portal Window
-    function openAbhaPortalInApp() {
-      const width = window.innerWidth > 600 ? 950 : window.innerWidth;
-      const height = window.innerHeight;
-      const left = (window.innerWidth - width) / 2;
-
-      window.open(
-        'https://abha.abdm.gov.in/',
-        'ABHA_PORTAL_WINDOW',
-        `width=${width},height=${height},top=0,left=${left},resizable=yes,scrollbars=yes,status=yes`
-      );
-    }
-
-    // Start Work & GPS Sync
-    function startWork() {
-      socket.emit('startWork', { token }, res => {
-        if (!res.ok) return alert(res.message);
-        document.getElementById('startWorkBtn').style.display = 'none';
-        document.getElementById('closeWorkBtn').style.display = 'block';
-        document.getElementById('gpsStatus').innerText = '📍 GPS Tracking Active...';
-        startGpsTracking();
-      });
-    }
-
-    function closeWork() {
-      socket.emit('closeWork', { token }, res => {
-        if (!res.ok) return alert(res.message);
-        document.getElementById('startWorkBtn').style.display = 'block';
-        document.getElementById('closeWorkBtn').style.display = 'none';
-        document.getElementById('gpsStatus').innerText = 'GPS: Off';
-        if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
-      });
-    }
-
-    function startGpsTracking() {
-      if ('geolocation' in navigator) {
-        watchPositionId = navigator.geolocation.watchPosition(
-          pos => {
-            const { latitude, longitude, accuracy } = pos.coords;
-            socket.emit('locationUpdate', { token, lat: latitude, lng: longitude, accuracy });
-            document.getElementById('gpsStatus').innerText = `📍 Live Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} (±${Math.round(accuracy)}m)`;
-          },
-          err => {
-            console.error(err);
-            document.getElementById('gpsStatus').innerText = '⚠️ Location permission denied.';
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-      }
-    }
-
-    // Add Customer Record
-    function handleAddCustomer(e) {
-      e.preventDefault();
-      const payload = {
-        token,
-        name: document.getElementById('custName').value,
-        mobile: document.getElementById('custMobile').value,
-        abha: document.getElementById('custAbha').value,
-        area: document.getElementById('custArea').value,
-        status: document.getElementById('custStatus').value,
-        remarks: document.getElementById('custRemarks').value
-      };
-
-      socket.emit('addCustomer', payload, res => {
-        if (!res.ok) return alert(res.message);
-        alert('✅ Customer Record Saved Successfully!');
-        e.target.reset();
-      });
-    }
-
-    // Delete Customer Record (Owner)
-    function deleteCustomer(id) {
-      if (!confirm('Are you sure you want to delete this customer record?')) return;
-      socket.emit('deleteCustomer', { token, id }, res => {
-        if (!res.ok) alert(res.message);
-      });
-    }
-
-    // Owner State & Map Logic
-    function fetchState() {
-      socket.emit('getState', { token }, res => {
-        if (res.ok) renderOwnerDashboard(res.state);
-      });
-    }
-
-    socket.on('state', state => {
-      if (userRole === 'owner') {
-        renderOwnerDashboard(state);
-      }
-    });
-
-    function renderOwnerDashboard(state) {
-      // Render Employees
-      const empTbody = document.getElementById('employeeTableBody');
-      empTbody.innerHTML = state.employees.map(e => `
-        <tr>
-          <td><b>${e.id}</b></td>
-          <td>${e.name}</td>
-          <td><span class="${e.status === 'Online' ? 'badge-online' : 'badge-offline'}">${e.status}</span></td>
-          <td><b>${e.cards || 0}</b></td>
-          <td>${e.area || '—'}</td>
-          <td>${e.last || '—'}</td>
-        </tr>
-      `).join('');
-
-      // Update Map Markers
-      state.employees.forEach(e => {
-        if (e.lat && e.lng) {
-          if (mapMarkers[e.id]) {
-            mapMarkers[e.id].setLatLng([e.lat, e.lng]);
-          } else if (leafletMap) {
-            mapMarkers[e.id] = L.marker([e.lat, e.lng])
-              .addTo(leafletMap)
-              .bindPopup(`<b>${e.name} (${e.id})</b><br>Status: ${e.status}<br>Cards: ${e.cards}`);
-          }
-        }
-      });
-
-      // Render Customers
-      const custTbody = document.getElementById('customerTableBody');
-      custTbody.innerHTML = state.customers.map(c => `
-        <tr>
-          <td>${c.date || '—'}</td>
-          <td>${c.employeeName || '—'}</td>
-          <td><b>${c.name}</b></td>
-          <td>${c.mobile || '—'}</td>
-          <td>${c.abha || '—'}</td>
-          <td><span class="badge-online">${c.status}</span></td>
-          <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteCustomer('${c.id}')">🗑️ Delete</button></td>
-        </tr>
-      `).join('');
-    }
-
-    function initMap() {
-      if (!leafletMap && document.getElementById('map')) {
-        leafletMap = L.map('map').setView([26.1542, 85.8918], 12); // Default Darbhanga Coordinates
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap'
-        }).addTo(leafletMap);
-      }
-    }
-
-    // Logout Session
-    function logout() {
-      socket.emit('logout', { token });
-      localStorage.clear();
-      location.reload();
-    }
-  </script>
 </body>
 </html>
