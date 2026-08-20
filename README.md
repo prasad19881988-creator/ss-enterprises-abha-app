@@ -1,48 +1,60 @@
-# 🔱 SS ENTERPRISES — ABHA Real-Time Work Portal
+# 🔱 SS ENTERPRISES — ABHA Work & Realtime Field Tracking Portal
 
-Welcome to the official workspace app for **SS Enterprises**. This application provides real-time field tracking, ABHA management tools, dynamic attendance logs, and administrative reporting.
-
----
-
-## 🔑 Demo Access & Login Credentials
-
-| Role | Username / ID | Password | Access Level |
-| :--- | :--- | :--- | :--- |
-| **Owner / Admin** | `SS` | `ADMIN@12345` | Full Dashboard & Live Employee Map |
-| **Field Employee** | `EMP101` | `SS@12345` | Work Tracking, Attendance & ABHA Portal |
+Welcome to the official source code repository for **SS ENTERPRISES** real-time field work management, ABHA registration portal, and employee GPS tracking platform.
 
 ---
 
-## ✨ Key Features
-
-* **Real-time Tracking:** Socket.IO & OpenStreetMap (Leaflet) integration for live employee location updates.
-* **ABHA Tools:** Direct, seamless access to the official ABHA / ABDM Portal & App workflows.
-* **Work & Attendance Logs:** One-click "Start Work" / "Close Work" with automatic timestamping.
-* **Reporting & Analytics:** ABHA card counter, work-detail logs, and CSV export functionality for admins.
-* **PWA Enabled:** Progressive Web App support for home-screen installation on mobile devices.
-* **Data Security & Privacy:** Strict consent-based location sharing; zero unauthorized data scraping.
-
----
-
-## 🛠️ Technical Stack & Architecture
-
-* **Backend:** Node.js, Express.js, Socket.IO
-* **Frontend:** HTML5, CSS3 (Luxury Theme), JavaScript (ES6+), Leaflet.js
-* **Storage:** Local JSON (`data.json`) for quick demo deployments
-* **Deployment:** Hosted via HTTPS on Render / GitHub Workflow
+## 📑 Table of Contents
+1. [Project Overview](#-project-overview)
+2. [Key System Features](#-key-system-features)
+3. [Architecture & Tech Stack](#-architecture--tech-stack)
+4. [Project File Structure](#-project-file-structure)
+5. [Default System Credentials](#-default-system-credentials)
+6. [WebSocket (Socket.IO) API Reference](#-websocket-socketio-api-reference)
+7. [Installation & Local Setup](#-installation--local-setup)
+8. [Render.com Deployment Guide](#-rendercom-deployment-guide)
+9. [PWA & Mobile Installation](#-pwa--mobile-installation)
+10. [Data Management & Backup](#-data-management--backup)
+11. [License & Branding](#-license--branding)
 
 ---
 
-## 🚀 Quick Setup & Local Run
+## 🎯 Project Overview
+This portal is designed to streamline field operations for **SS ENTERPRISES**. It enables real-time location monitoring of field staff, tracks ABHA card processing counts, records customer work entries, and provides direct in-app access to official government ABHA services through a modern, responsive Web application.
 
-Ensure you have **Node.js (v18+)** installed on your system.
+---
 
-```bash
-# 1. Clone or download the repository
-git clone [https://github.com/your-username/your-repo.name.git](https://github.com/your-username/your-repo.name.git)
+## ✨ Key System Features
 
-# 2. Install dependencies
-npm install
+### 👑 Owner & Admin Capabilities
+* **Live Employee Tracking:** Real-time interactive map views powered by Leaflet & OpenStreetMap.
+* **Attendance & Status Monitoring:** Instant visual indicators for Online/Offline staff status.
+* **Field Analytics:** View daily processed card totals, targeted areas, and active staff coordinates.
+* **Data Control:** Comprehensive customer entry logs with administrative deletion authority.
 
-# 3. Start the application
-npm start
+### 👷 Employee & Field Staff Features
+* **One-Tap Work Session:** Easy "Start Work" and "Close Work" daily operations.
+* **Background GPS Location Sync:** Automatic latitude, longitude, and accuracy radius updates.
+* **Customer Work Entry:** On-field entry of customer details, mobile numbers, and status.
+* **In-App Portal Integration:** Direct seamless access to official ABHA registration tools.
+
+### 📱 PWA & Performance
+* **App-Like Experience:** Installable on Android and iOS devices.
+* **Offline Asset Support:** Powered by custom Service Worker (`sw.js`) caching.
+* **Native Status Bars:** Configured with luxury dark background aesthetics via `manifest.json`.
+* **Zero-Lag Communication:** WebSockets eliminate page refreshes for all live actions.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+* **Backend Engine:** Node.js v18+ with Express framework.
+* **Realtime Communication:** Socket.IO v4.x (WebSocket protocol with fallback).
+* **Frontend UI:** HTML5, Modern CSS3 Flexbox/Grid, Vanilla JavaScript (ES6+).
+* **Mapping Framework:** Leaflet JS with OpenStreetMap tiles.
+* **Data Storage:** JSON-based persistent file storage (`data.json`).
+* **Deployment Platform:** Render.com Web Services (Auto-deployment pipeline).
+
+---
+
+## 📂 Project File Structure
