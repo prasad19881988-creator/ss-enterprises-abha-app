@@ -58,3 +58,41 @@ This portal is designed to streamline field operations for **SS ENTERPRISES**. I
 ---
 
 ## 📂 Project File Structure
+
+---
+
+## 🔐 Default System Credentials
+
+| Access Role | User ID / Login | Default Password | Permissions Level |
+|---|---|---|---|
+| **Owner / Admin** | `SS` | `ADMIN@12345` | Full Control, Maps, Deletion, Analytics |
+| **Default Employee** | `EMP101` | `SS@12345` | Location Broadcast, ABHA Logging, Work Clock |
+
+---
+
+## 📡 WebSocket (Socket.IO) API Reference
+
+| Event Name | Type | Payload Parameters | Description |
+|---|---|---|---|
+| `login` | Emit (Ack) | `{ role, id, password }` | Authenticates user and returns session token |
+| `signup` | Emit (Ack) | `{ name, phone, area }` | Registers a new field employee |
+| `startWork` | Emit (Ack) | `{ token }` | Sets employee status to Online and logs timestamp |
+| `locationUpdate` | Emit | `{ token, lat, lng, accuracy }` | Updates real-time GPS coordinates |
+| `addCustomer` | Emit (Ack) | `{ token, name, mobile, abha, area, status, remarks }` | Logs completed customer work entry |
+| `deleteCustomer` | Emit (Ack) | `{ token, id }` | Owner-only deletion of work record |
+| `closeWork` | Emit (Ack) | `{ token }` | Clock-out employee and update last seen |
+
+---
+
+## 🚀 Installation & Local Setup
+
+### Prerequisites
+* **Node.js** (v18.0.0 or higher)
+* **npm** (v9.0.0 or higher)
+* **Git** installed on local system
+
+### Setup Steps
+1. **Clone Repository:**
+   ```bash
+   git clone [https://github.com/YOUR_USERNAME/ss-enterprises-abha-realtime-app.git](https://github.com/YOUR_USERNAME/ss-enterprises-abha-realtime-app.git)
+   cd ss-enterprises-abha-realtime-app
