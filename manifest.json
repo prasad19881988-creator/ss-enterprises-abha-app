@@ -1,11 +1,13 @@
 {
-  "name": "SS ENTERPRISES ABHA App",
-  "short_name": "SS ENTERPRISES",
-  "start_url": "./",
+  "name": "SS ENTERPRISES — ABHA Work Portal",
+  "short_name": "SS Enterprise",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#28b95b",
-  "description": "SS ENTERPRISES ABHA work, attendance and owner management portal.",
+  "orientation": "portrait",
+  "background_color": "#0b0f19",
+  "theme_color": "#0f172a",
+  "description": "Official SS ENTERPRISES portal for ABHA work management, employee attendance, and real-time field tracking.",
   "icons": [
     {
       "src": "logo.png",
