@@ -1,616 +1,508 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SS ENTERPRISES • ABHA WORK PORTAL</title>
-  <script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SS ENTERPRISES — ABHA Portal & Field Tracking</title>
   
-  <!-- Leaflet Map CSS & JS for Live Location Tracking -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+
+  <!-- Leaflet CSS for Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+  
   <style>
-    :root {
-      --bg: #0b0f19;
-      --card-bg: #151c2c;
-      --card-bd: rgba(212, 175, 55, 0.25);
-      --gold: #D4AF37;
-      --gold-light: #f3e5ab;
-      --gold-dark: #aa820a;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --green: #10b981;
-      --red: #ef4444;
-      --blue: #3b82f6;
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* Luxury Header */
-    .top {
-      height: 65px;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      border-bottom: 2px solid var(--gold);
-      color: var(--gold-light);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-    .brand {
-      font-weight: 800;
-      font-size: 1.1rem;
-      letter-spacing: 1px;
-      flex: 1;
-      color: var(--gold);
-      text-transform: uppercase;
-      text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-    }
-
-    /* Buttons */
-    button, .btn {
-      border: 0;
-      border-radius: 10px;
-      padding: 12px 18px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .primary {
-      background: linear-gradient(135deg, #D4AF37 0%, #aa820a 100%);
-      color: #000;
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-    }
-    .primary:hover {
-      background: linear-gradient(135deg, #f3e5ab 0%, #D4AF37 100%);
-      transform: translateY(-2px);
-    }
-    .green {
-      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-    .green:hover { transform: translateY(-2px); }
-    .danger {
-      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-      color: #fff;
-    }
-    .outline {
-      background: transparent;
-      border: 1px solid var(--gold);
-      color: var(--gold-light);
-    }
-    .outline:hover { background: rgba(212, 175, 55, 0.1); }
-
-    /* Layout & Cards */
-    .wrap { max-width: 1240px; margin: auto; padding: 20px; }
-    .login { min-height: calc(100vh - 65px); display: grid; place-items: center; padding: 20px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0b0f19; color: #f3f4f6; padding-bottom: 70px; }
     
-    .box, .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-bd);
-      border-radius: 16px;
-      padding: 22px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      backdrop-filter: blur(10px);
-    }
-    .box { width: min(480px, 100%); }
-    
-    h1, h2, h3 { margin-top: 0; color: var(--gold-light); }
-    label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--gold); }
-    
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      background: #0f172a;
-      border: 1px solid var(--card-bd);
-      border-radius: 10px;
-      color: #fff;
-      font: inherit;
-    }
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--gold);
-      box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
-    }
+    /* Header */
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 1.1rem; color: #f59e0b; }
+    .brand img { height: 32px; border-radius: 6px; }
+    .user-badge { font-size: 0.85rem; background: #1f2937; padding: 6px 12px; border-radius: 20px; color: #10b981; border: 1px solid #374151; }
 
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .metric { font-size: 30px; font-weight: 900; color: var(--gold); margin-top: 5px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .section { margin-top: 20px; }
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-    .hidden { display: none !important; }
+    /* Layout Containers */
+    .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+    .card-title { font-size: 1.1rem; font-weight: 600; color: #f3f4f6; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+
+    /* Form Inputs & Buttons */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.85rem; color: #9ca3af; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.2s; }
+    input:focus, select:focus { border-color: #3b82f6; }
+    
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+    .btn-success { background: linear-gradient(135deg, #059669, #047857); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #d97706, #b45309); color: white; }
 
     /* Map Box */
-    #map {
-      height: 380px;
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid var(--card-bd);
-      margin-top: 15px;
-      z-index: 1;
-    }
+    #map { height: 380px; width: 100%; border-radius: 10px; border: 1px solid #374151; margin-top: 10px; }
 
     /* Tables */
-    .tablewrap { overflow-x: auto; margin-top: 10px; }
-    .table { width: 100%; border-collapse: collapse; min-width: 850px; }
-    .table th {
-      background: #0f172a;
-      color: var(--gold);
-      padding: 12px;
-      text-align: left;
-      font-size: 13px;
-      border-bottom: 2px solid var(--card-bd);
-    }
-    .table td {
-      padding: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      font-size: 13px;
-    }
-    .table tr:hover { background: rgba(212, 175, 55, 0.03); }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 10px; }
+    th { background: #1f2937; color: #9ca3af; padding: 10px; border-bottom: 1px solid #374151; }
+    td { padding: 10px; border-bottom: 1px solid #1f2937; color: #e5e7eb; }
+    
+    /* Status Badges */
+    .badge-online { background: #065f46; color: #34d399; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; }
+    .badge-offline { background: #374151; color: #9ca3af; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; }
 
-    .badge {
-      padding: 4px 10px;
-      border-radius: 99px;
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      font-size: 11px;
-      font-weight: 800;
-      border: 1px solid #10b981;
-    }
-    .badge.off {
-      background: rgba(148, 163, 184, 0.1);
-      color: var(--muted);
-      border: 1px solid var(--muted);
-    }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    /* Floating ABHA Quick Launcher */
+    .floating-abha-btn { position: fixed; bottom: 20px; right: 20px; background: #2563eb; color: white; border: none; border-radius: 50px; padding: 14px 22px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 9999; display: flex; align-items: center; gap: 8px; }
 
-    /* In-App Modal Overlay for ABHA Portal */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(5px);
-      z-index: 1000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 15px;
-    }
-    .modal-box {
-      background: var(--card-bg);
-      border: 2px solid var(--gold);
-      border-radius: 18px;
-      width: 100%;
-      max-width: 1000px;
-      height: 90vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
-    }
-    .modal-header {
-      padding: 15px 20px;
-      background: #0f172a;
-      border-bottom: 1px solid var(--card-bd);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-body { flex: 1; position: relative; background: #fff; }
-    .modal-body iframe { width: 100%; height: 100%; border: 0; }
-    .modal-footer {
-      padding: 12px 20px;
-      background: #0f172a;
-      border-top: 1px solid var(--card-bd);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    @media(max-width:800px){
-      .grid { grid-template-columns: 1fr 1fr; }
-      .two { grid-template-columns: 1fr; }
-    }
-    @media(max-width:500px){
-      .grid { grid-template-columns: 1fr; }
-      .wrap { padding: 12px; }
-    }
+    /* Tabs */
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; background: #1f2937; border: 1px solid #374151; color: #9ca3af; border-radius: 8px; cursor: pointer; text-align: center; font-weight: 600; }
+    .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="top">
-    <div class="brand">🔱 SS ENTERPRISES • ABHA PORTAL</div>
-    <button id="logoutBtn" class="outline hidden" onclick="logout()">Logout</button>
+  <!-- App Header -->
+  <header>
+    <div class="brand">
+      <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+      <span>SS ENTERPRISES</span>
+    </div>
+    <div id="userStatus" class="user-badge" style="display: none;">Offline</div>
   </header>
 
-  <!-- Login Section -->
-  <section id="loginView" class="login">
-    <div class="box">
-      <h1 style="text-align: center; color: var(--gold);">SS ENTERPRISES</h1>
-      <p class="muted" style="text-align: center; margin-bottom: 20px;">ABHA Work & Field Tracking Management</p>
-      
-      <div class="tabs">
-        <button id="loginTab" class="primary" style="flex:1" onclick="showLogin()">Login</button>
-        <button id="signupTab" class="outline" style="flex:1" onclick="showSignup()">New Staff Sign Up</button>
+  <div class="container">
+
+    <!-- LOGIN & SIGNUP PANEL -->
+    <div id="authSection" class="card">
+      <div class="auth-tabs">
+        <div class="tab-btn active" onclick="switchAuthTab('login')">Login</div>
+        <div class="tab-btn" onclick="switchAuthTab('signup')">Staff Signup</div>
       </div>
 
-      <div id="loginForm">
-        <label>Login Role</label>
-        <select id="role" onchange="syncId()">
-          <option value="employee">Employee</option>
-          <option value="owner">Owner / Admin</option>
-        </select>
-        
-        <label>Employee ID / Admin ID</label>
-        <input id="uid" value="EMP101">
-        
-        <label>Password</label>
-        <input id="pwd" type="password" value="SS@12345">
-        
-        <button class="primary" style="width:100%; margin-top:20px;" onclick="login()">Secure Login</button>
-      </div>
-
-      <div id="signupForm" class="hidden">
-        <label>Full Name</label>
-        <input id="sn" placeholder="Staff name">
-        <label>Mobile Number</label>
-        <input id="sp" placeholder="Mobile number" inputmode="tel">
-        <label>Area / Location</label>
-        <input id="sa" placeholder="e.g. Darbhanga">
-        <p class="muted" style="margin-top:10px;">Employee ID automatically banega. Default password <b>SS@12345</b> rahega.</p>
-        <button class="green" style="width:100%; margin-top:10px;" onclick="signup()">Create Staff Account</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Main Workspace View -->
-  <main id="app" class="wrap hidden"></main>
-
-  <!-- In-App ABHA Portal Modal -->
-  <div id="abhaModal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 style="margin:0; color:var(--gold);">🏛️ Official ABHA / ABDM Portal</h3>
-        <button class="danger" style="padding: 6px 12px;" onclick="closeAbhaModal()">✖ Close</button>
-      </div>
-      <div class="modal-body">
-        <iframe src="https://abha.abdm.gov.in/" title="ABHA Portal"></iframe>
-      </div>
-      <div class="modal-footer">
-        <span class="muted">Agar page load hone me samasya ho to direct link se kholne ke liye click karein:</span>
-        <a href="https://abha.abdm.gov.in/" target="_blank" class="btn primary" style="padding: 6px 14px; text-decoration: none;">External Portal Open</a>
-      </div>
-    </div>
-  </div>
-
-<script>
-const officialABHA = "https://abha.abdm.gov.in/";
-let socket = io(), session = null, watchId = null, leafletMap = null, mapMarkers = [];
-let state = null;
-
-socket.on('state', d => {
-  state = d;
-  if (session?.role === 'owner') renderOwner(d);
-});
-
-function showLogin() {
-  loginForm.classList.remove('hidden');
-  signupForm.classList.add('hidden');
-  loginTab.className = 'primary';
-  signupTab.className = 'outline';
-}
-
-function showSignup() {
-  loginForm.classList.add('hidden');
-  signupForm.classList.remove('hidden');
-  loginTab.className = 'outline';
-  signupTab.className = 'primary';
-}
-
-function syncId() {
-  if (role.value === 'owner') {
-    uid.value = 'SS';
-    pwd.value = 'ADMIN@12345';
-  } else {
-    uid.value = 'EMP101';
-    pwd.value = 'SS@12345';
-  }
-}
-
-function login() {
-  socket.emit('login', { role: role.value, id: uid.value.trim(), password: pwd.value }, r => {
-    if (!r.ok) return alert(r.message);
-    session = { role: role.value, id: uid.value.trim(), token: r.token };
-    loginView.classList.add('hidden');
-    logoutBtn.classList.remove('hidden');
-    if (session.role === 'owner') renderOwner(r.state);
-    else renderEmployee(r.employee);
-  });
-}
-
-function signup() {
-  socket.emit('signup', { name: sn.value, phone: sp.value, area: sa.value }, r => {
-    if (!r.ok) return alert(r.message);
-    alert('Account created!\nEmployee ID: ' + r.employee.id + '\nPassword: SS@12345');
-    showLogin();
-    role.value = 'employee';
-    uid.value = r.employee.id;
-    pwd.value = 'SS@12345';
-  });
-}
-
-function logout() {
-  stopLocation();
-  socket.emit('logout', { token: session?.token });
-  session = null;
-  app.classList.add('hidden');
-  loginView.classList.remove('hidden');
-  logoutBtn.classList.add('hidden');
-}
-
-/* Owner Dashboard Render */
-function renderOwner(s) {
-  app.classList.remove('hidden');
-  let es = s.employees || [], cs = s.customers || [];
-  
-  app.innerHTML = `
-    <h2>Owner Dashboard</h2>
-    <div class="grid">
-      <div class="card"><div class="muted">Total Staff</div><div class="metric">${es.length}</div></div>
-      <div class="card"><div class="muted">Online Live</div><div class="metric">${es.filter(e => e.status === 'Online').length}</div></div>
-      <div class="card"><div class="muted">Customers</div><div class="metric">${cs.length}</div></div>
-      <div class="card"><div class="muted">Completed ABHA</div><div class="metric">${cs.filter(c => c.status === 'Completed').length}</div></div>
-    </div>
-
-    <!-- Live Employee Map -->
-    <div class="card section">
-      <h3>🗺️ Employee Live GPS Map Tracker</h3>
-      <p class="muted">Field staff ki real-time location map par dekhein.</p>
-      <div id="map"></div>
-    </div>
-
-    <div class="card section">
-      <h3>Employees Status</h3>
-      <div class="tablewrap">
-        <table class="table">
-          <tr><th>ID</th><th>Name</th><th>Mobile</th><th>Status</th><th>Area</th><th>Cards</th><th>Last Update</th></tr>
-          ${es.map(e => `
-            <tr>
-              <td><b>${e.id}</b></td>
-              <td>${e.name}</td>
-              <td>${e.phone || '—'}</td>
-              <td><span class="badge ${e.status !== 'Online' ? 'off' : ''}">${e.status}</span></td>
-              <td>${e.area || '—'}</td>
-              <td><b>${e.cards || 0}</b></td>
-              <td>${e.last || '—'}</td>
-            </tr>
-          `).join('')}
-        </table>
-      </div>
-    </div>
-
-    <div class="card section">
-      <h3>Customer / ABHA Work Records</h3>
-      <div class="tablewrap">
-        <table class="table">
-          <tr><th>Date</th><th>Employee</th><th>Customer</th><th>Mobile</th><th>ABHA Card No.</th><th>Area</th><th>Status</th><th>Remarks</th><th>Action</th></tr>
-          ${cs.map(c => `
-            <tr>
-              <td>${c.date}</td>
-              <td>${c.employeeName} (${c.employeeId})</td>
-              <td><b>${c.name}</b></td>
-              <td>${c.mobile || '—'}</td>
-              <td>${c.abha || '—'}</td>
-              <td>${c.area || '—'}</td>
-              <td><span class="badge">${c.status}</span></td>
-              <td>${c.remarks || '—'}</td>
-              <td><button class="danger" style="padding: 4px 8px;" onclick="deleteCustomer('${c.id}')">Delete</button></td>
-            </tr>
-          `).join('')}
-        </table>
-      </div>
-    </div>
-  `;
-
-  setTimeout(() => initMap(es), 200);
-}
-
-/* Initialize Leaflet OpenStreetMap */
-function initMap(employees) {
-  const mapContainer = document.getElementById('map');
-  if (!mapContainer) return;
-
-  if (!leafletMap) {
-    leafletMap = L.map('map').setView([26.1542, 85.8918], 11); // Default center (Darbhanga/Bihar)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(leafletMap);
-  }
-
-  mapMarkers.forEach(m => leafletMap.removeLayer(m));
-  mapMarkers = [];
-
-  let bounds = [];
-  employees.forEach(emp => {
-    if (emp.lat && emp.lng) {
-      let marker = L.marker([emp.lat, emp.lng]).addTo(leafletMap)
-        .bindPopup(`<b>${emp.name} (${emp.id})</b><br>Status: ${emp.status}<br>Area: ${emp.area || 'N/A'}`);
-      mapMarkers.push(marker);
-      bounds.push([emp.lat, emp.lng]);
-    }
-  });
-
-  if (bounds.length > 0) {
-    leafletMap.fitBounds(bounds, { padding: [30, 30] });
-  }
-}
-
-function deleteCustomer(id) {
-  if (confirm('Delete this customer record?')) {
-    socket.emit('deleteCustomer', { token: session.token, id }, r => {
-      if (!r.ok) alert(r.message);
-    });
-  }
-}
-
-/* Employee Dashboard Render */
-function renderEmployee(e) {
-  app.classList.remove('hidden');
-  let mine = (state?.customers || []).filter(c => c.employeeId === e.id);
-  
-  app.innerHTML = `
-    <div class="card">
-      <h2>Welcome, ${e.name}</h2>
-      <p class="muted">Employee ID: <b style="color:var(--gold);">${e.id}</b></p>
-      
-      <div class="card section" style="background:#0f172a; border: 1px solid var(--gold);">
-        <h3 style="color:var(--gold);">🏛️ ABHA Work Portal</h3>
-        <p class="muted">Official ABDM portal par customer ka work complete karein. Work complete hone ke baad neeche details save karein.</p>
-        <button class="primary" onclick="openAbhaModal()">🚀 Open In-App ABHA Portal</button>
-      </div>
-
-      <div class="actions">
-        <button class="green" onclick="startWork()">▶ Start Work & Share Live Location</button>
-        <button class="danger" onclick="closeWork()">⏹ Close Work</button>
-      </div>
-      <p style="margin-top:15px;">Live Status: <b id="st" style="color:var(--gold);">${e.status}</b> • GPS: ${e.location || 'Not sharing'}</p>
-    </div>
-
-    <div class="card section">
-      <h3>Add Customer / ABHA Work</h3>
-      <div class="two">
-        <div><label>Customer Name *</label><input id="cn" placeholder="Customer full name"></div>
-        <div><label>Mobile Number</label><input id="cm" placeholder="Mobile number" inputmode="tel"></div>
-      </div>
-      <div class="two">
-        <div><label>ABHA Card Number</label><input id="ca" placeholder="14-digit ABHA number"></div>
-        <div><label>Area / Work Location</label><input id="crarea" value="${e.area || ''}"></div>
-      </div>
-      <div class="two">
-        <div><label>Work Status</label>
-          <select id="cs">
-            <option>Completed</option>
-            <option>Pending</option>
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Select Role</label>
+          <select id="loginRole" onchange="toggleLoginFields()">
+            <option value="employee">Field Employee</option>
+            <option value="owner">Owner / Admin</option>
           </select>
         </div>
-        <div><label>Remarks / Work Details</label><input id="cr" placeholder="Work summary"></div>
-      </div>
-      <button class="primary" style="margin-top:15px; width:100%;" onclick="addCustomer()">💾 Save Customer Work</button>
+
+        <div class="form-group">
+          <label id="idLabel">Employee ID</label>
+          <input type="text" id="loginId" placeholder="e.g., EMP101" required>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">🚀 Login to Portal</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signupName" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="signupPhone" placeholder="Enter mobile number">
+        </div>
+        <div class="form-group">
+          <label>Assigned Work Area</label>
+          <input type="text" id="signupArea" placeholder="e.g., Darbhanga Donar">
+        </div>
+        <button type="submit" class="btn btn-success">✅ Register New Employee</button>
+      </form>
     </div>
 
-    <div class="card section">
-      <h3>My Customer Work Records (${mine.length})</h3>
-      <div class="tablewrap">
-        <table class="table">
-          <tr><th>Date</th><th>Customer</th><th>Mobile</th><th>ABHA Card No.</th><th>Area</th><th>Status</th><th>Remarks</th></tr>
-          ${mine.map(c => `
-            <tr>
-              <td>${c.date}</td>
-              <td><b>${c.name}</b></td>
-              <td>${c.mobile || '—'}</td>
-              <td>${c.abha || '—'}</td>
-              <td>${c.area || '—'}</td>
-              <td><span class="badge">${c.status}</span></td>
-              <td>${c.remarks || '—'}</td>
-            </tr>
-          `).join('')}
-        </table>
+    <!-- EMPLOYEE DASHBOARD -->
+    <div id="employeeDashboard" style="display: none;">
+      
+      <!-- Work Control Card -->
+      <div class="card">
+        <div class="card-title">⏱️ Work Clock & GPS Tracking</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button id="startWorkBtn" onclick="startWork()" class="btn btn-success">▶️ Start Work</button>
+          <button id="closeWorkBtn" onclick="closeWork()" class="btn btn-danger" style="display: none;">⏹️ Close Work</button>
+        </div>
+        <div id="gpsStatus" style="font-size: 0.8rem; color: #9ca3af; margin-top: 10px; text-align: center;">GPS: Off</div>
       </div>
+
+      <!-- Government ABHA Portal Launcher -->
+      <div class="card" style="border: 1px solid #2563eb;">
+        <div class="card-title">🏛️ Official Government ABHA Portal</div>
+        <p style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 12px;">Naya ABHA card banane ke liye portal open karein. Aapka app background me chalega.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button onclick="openAbhaPortalInApp()" class="btn btn-primary">📲 Open In-App View</button>
+          <a href="https://abha.abdm.gov.in/" target="_blank" rel="noopener noreferrer" class="btn btn-warning" style="text-decoration: none;">🌐 Direct Web Link</a>
+        </div>
+      </div>
+
+      <!-- Add Customer / Work Entry Form -->
+      <div class="card">
+        <div class="card-title">📝 Add ABHA Customer Record</div>
+        <form onsubmit="handleAddCustomer(event)">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <input type="text" id="custName" placeholder="Enter customer name" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="tel" id="custMobile" placeholder="10-digit mobile number">
+          </div>
+          <div class="form-group">
+            <label>ABHA Card Number</label>
+            <input type="text" id="custAbha" placeholder="e.g., 91-XXXX-XXXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label>Location / Area</label>
+            <input type="text" id="custArea" placeholder="e.g., Ward 12, Darbhanga">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="custStatus">
+              <option value="Completed">Completed (Card Generated)</option>
+              <option value="Pending">Pending / OTP Issue</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Remarks / Notes</label>
+            <textarea id="custRemarks" rows="2" placeholder="Optional notes"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">💾 Save Customer Record</button>
+        </form>
+      </div>
+
+      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Session</button>
     </div>
-  `;
-}
 
-/* Modal Window Controls */
-function openAbhaModal() {
-  document.getElementById('abhaModal').classList.remove('hidden');
-}
-function closeAbhaModal() {
-  document.getElementById('abhaModal').classList.add('hidden');
-}
+    <!-- OWNER / ADMIN DASHBOARD -->
+    <div id="ownerDashboard" style="display: none;">
+      
+      <!-- Real-time Field Map -->
+      <div class="card">
+        <div class="card-title">🗺️ Real-Time Employee Field Map</div>
+        <div id="map"></div>
+      </div>
 
-function addCustomer() {
-  if (!cn.value.trim()) return alert('Please enter Customer Name.');
-  socket.emit('addCustomer', {
-    token: session.token,
-    name: cn.value,
-    mobile: cm.value,
-    abha: ca.value,
-    area: crarea.value,
-    status: cs.value,
-    remarks: cr.value
-  }, r => {
-    if (!r.ok) return alert(r.message);
-    alert('Customer work saved successfully!');
-    renderEmployee(r.employee);
-  });
-}
+      <!-- Staff Status Table -->
+      <div class="card">
+        <div class="card-title">👥 Field Staff Live Status</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Cards</th>
+                <th>Area</th>
+                <th>Last GPS Update</th>
+              </tr>
+            </thead>
+            <tbody id="employeeTableBody">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-/* Geolocation Tracking */
-function startWork() {
-  if (!navigator.geolocation) return alert('GPS/Location is not supported by your browser.');
-  socket.emit('startWork', { token: session.token }, r => {
-    if (!r.ok) return alert(r.message);
-    
-    navigator.geolocation.getCurrentPosition(sendLocation, () => alert('Location permission is required for field work.'), {
-      enableHighAccuracy: true,
-      timeout: 15000
+      <!-- Customer Records Table -->
+      <div class="card">
+        <div class="card-title">📊 Customer ABHA Work Records</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Staff Name</th>
+                <th>Customer Name</th>
+                <th>Mobile</th>
+                <th>ABHA Number</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Admin</button>
+    </div>
+
+  </div>
+
+  <!-- Floating Quick ABHA Launcher (Visible when logged in) -->
+  <button id="floatingAbhaBtn" class="floating-abha-btn" onclick="openAbhaPortalInApp()" style="display: none;">
+    🏛️ Open ABHA Portal
+  </button>
+
+  <!-- External JavaScript Dependencies -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // System State
+    const socket = io();
+    let token = localStorage.getItem('ss_token');
+    let currentUser = JSON.parse(localStorage.getItem('ss_user') || 'null');
+    let userRole = localStorage.getItem('ss_role');
+    let watchPositionId = null;
+    let leafletMap = null;
+    let mapMarkers = {};
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', () => {
+      registerServiceWorker();
+      if (token && currentUser && userRole) {
+        restoreSession();
+      }
     });
-    
-    watchId = navigator.geolocation.watchPosition(sendLocation, err => console.log(err), {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 15000
+
+    // PWA Service Worker Registration
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('SW Registered'))
+          .catch(err => console.log('SW Error:', err));
+      }
+    }
+
+    // Tab Switching for Login / Signup
+    function switchAuthTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (tab === 'login') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('signupForm').style.display = 'none';
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'block';
+      }
+    }
+
+    function toggleLoginFields() {
+      const role = document.getElementById('loginRole').value;
+      document.getElementById('idLabel').innerText = role === 'owner' ? 'Owner Username' : 'Employee ID';
+      document.getElementById('loginId').placeholder = role === 'owner' ? 'SS' : 'e.g., EMP101';
+    }
+
+    // Login Handler
+    function handleLogin(e) {
+      e.preventDefault();
+      const role = document.getElementById('loginRole').value;
+      const id = document.getElementById('loginId').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+
+      socket.emit('login', { role, id, password }, res => {
+        if (!res.ok) return alert('❌ Error: ' + res.message);
+        
+        token = res.token;
+        userRole = role;
+        currentUser = res.employee || { id: 'SS', name: 'Owner Admin' };
+
+        localStorage.setItem('ss_token', token);
+        localStorage.setItem('ss_role', userRole);
+        localStorage.setItem('ss_user', JSON.stringify(currentUser));
+
+        restoreSession();
+      });
+    }
+
+    // Employee Signup Handler
+    function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value;
+      const phone = document.getElementById('signupPhone').value;
+      const area = document.getElementById('signupArea').value;
+
+      socket.emit('signup', { name, phone, area }, res => {
+        if (!res.ok) return alert('❌ Error: ' + res.message);
+        alert(`✅ Signup Successful!\n\nYour Assigned Employee ID is: ${res.employee.id}\nDefault Password: ${res.password}`);
+        switchAuthTab('login');
+        document.getElementById('loginId').value = res.employee.id;
+      });
+    }
+
+    // Session Restore & Dashboard Router
+    function restoreSession() {
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('userStatus').style.display = 'inline-block';
+      document.getElementById('floatingAbhaBtn').style.display = 'flex';
+
+      if (userRole === 'owner') {
+        document.getElementById('ownerDashboard').style.display = 'block';
+        document.getElementById('employeeDashboard').style.display = 'none';
+        document.getElementById('userStatus').innerText = '👑 Owner Admin';
+        initMap();
+        fetchState();
+      } else {
+        document.getElementById('employeeDashboard').style.display = 'block';
+        document.getElementById('ownerDashboard').style.display = 'none';
+        document.getElementById('userStatus').innerText = `👷 ${currentUser.name} (${currentUser.id})`;
+      }
+    }
+
+    // Open Government ABHA Portal Window
+    function openAbhaPortalInApp() {
+      const width = window.innerWidth > 600 ? 950 : window.innerWidth;
+      const height = window.innerHeight;
+      const left = (window.innerWidth - width) / 2;
+
+      window.open(
+        'https://abha.abdm.gov.in/',
+        'ABHA_PORTAL_WINDOW',
+        `width=${width},height=${height},top=0,left=${left},resizable=yes,scrollbars=yes,status=yes`
+      );
+    }
+
+    // Start Work & GPS Sync
+    function startWork() {
+      socket.emit('startWork', { token }, res => {
+        if (!res.ok) return alert(res.message);
+        document.getElementById('startWorkBtn').style.display = 'none';
+        document.getElementById('closeWorkBtn').style.display = 'block';
+        document.getElementById('gpsStatus').innerText = '📍 GPS Tracking Active...';
+        startGpsTracking();
+      });
+    }
+
+    function closeWork() {
+      socket.emit('closeWork', { token }, res => {
+        if (!res.ok) return alert(res.message);
+        document.getElementById('startWorkBtn').style.display = 'block';
+        document.getElementById('closeWorkBtn').style.display = 'none';
+        document.getElementById('gpsStatus').innerText = 'GPS: Off';
+        if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
+      });
+    }
+
+    function startGpsTracking() {
+      if ('geolocation' in navigator) {
+        watchPositionId = navigator.geolocation.watchPosition(
+          pos => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            socket.emit('locationUpdate', { token, lat: latitude, lng: longitude, accuracy });
+            document.getElementById('gpsStatus').innerText = `📍 Live Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} (±${Math.round(accuracy)}m)`;
+          },
+          err => {
+            console.error(err);
+            document.getElementById('gpsStatus').innerText = '⚠️ Location permission denied.';
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      }
+    }
+
+    // Add Customer Record
+    function handleAddCustomer(e) {
+      e.preventDefault();
+      const payload = {
+        token,
+        name: document.getElementById('custName').value,
+        mobile: document.getElementById('custMobile').value,
+        abha: document.getElementById('custAbha').value,
+        area: document.getElementById('custArea').value,
+        status: document.getElementById('custStatus').value,
+        remarks: document.getElementById('custRemarks').value
+      };
+
+      socket.emit('addCustomer', payload, res => {
+        if (!res.ok) return alert(res.message);
+        alert('✅ Customer Record Saved Successfully!');
+        e.target.reset();
+      });
+    }
+
+    // Delete Customer Record (Owner)
+    function deleteCustomer(id) {
+      if (!confirm('Are you sure you want to delete this customer record?')) return;
+      socket.emit('deleteCustomer', { token, id }, res => {
+        if (!res.ok) alert(res.message);
+      });
+    }
+
+    // Owner State & Map Logic
+    function fetchState() {
+      socket.emit('getState', { token }, res => {
+        if (res.ok) renderOwnerDashboard(res.state);
+      });
+    }
+
+    socket.on('state', state => {
+      if (userRole === 'owner') {
+        renderOwnerDashboard(state);
+      }
     });
-    
-    renderEmployee(r.employee);
-  });
-}
 
-function sendLocation(p) {
-  if (session) {
-    socket.emit('locationUpdate', {
-      token: session.token,
-      lat: p.coords.latitude,
-      lng: p.coords.longitude,
-      accuracy: p.coords.accuracy
-    });
-  }
-}
+    function renderOwnerDashboard(state) {
+      // Render Employees
+      const empTbody = document.getElementById('employeeTableBody');
+      empTbody.innerHTML = state.employees.map(e => `
+        <tr>
+          <td><b>${e.id}</b></td>
+          <td>${e.name}</td>
+          <td><span class="${e.status === 'Online' ? 'badge-online' : 'badge-offline'}">${e.status}</span></td>
+          <td><b>${e.cards || 0}</b></td>
+          <td>${e.area || '—'}</td>
+          <td>${e.last || '—'}</td>
+        </tr>
+      `).join('');
 
-function stopLocation() {
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
-}
+      // Update Map Markers
+      state.employees.forEach(e => {
+        if (e.lat && e.lng) {
+          if (mapMarkers[e.id]) {
+            mapMarkers[e.id].setLatLng([e.lat, e.lng]);
+          } else if (leafletMap) {
+            mapMarkers[e.id] = L.marker([e.lat, e.lng])
+              .addTo(leafletMap)
+              .bindPopup(`<b>${e.name} (${e.id})</b><br>Status: ${e.status}<br>Cards: ${e.cards}`);
+          }
+        }
+      });
 
-function closeWork() {
-  stopLocation();
-  socket.emit('closeWork', { token: session.token }, r => {
-    if (r.ok) renderEmployee(r.employee);
-  });
-}
-</script>
+      // Render Customers
+      const custTbody = document.getElementById('customerTableBody');
+      custTbody.innerHTML = state.customers.map(c => `
+        <tr>
+          <td>${c.date || '—'}</td>
+          <td>${c.employeeName || '—'}</td>
+          <td><b>${c.name}</b></td>
+          <td>${c.mobile || '—'}</td>
+          <td>${c.abha || '—'}</td>
+          <td><span class="badge-online">${c.status}</span></td>
+          <td><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteCustomer('${c.id}')">🗑️ Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function initMap() {
+      if (!leafletMap && document.getElementById('map')) {
+        leafletMap = L.map('map').setView([26.1542, 85.8918], 12); // Default Darbhanga Coordinates
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(leafletMap);
+      }
+    }
+
+    // Logout Session
+    function logout() {
+      socket.emit('logout', { token });
+      localStorage.clear();
+      location.reload();
+    }
+  </script>
 </body>
 </html>
