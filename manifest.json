@@ -1,0 +1,23 @@
+{
+  "name": "SS ENTERPRISES ABHA App",
+  "short_name": "SS ENTERPRISES",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#28b95b",
+  "description": "SS ENTERPRISES ABHA work, attendance and owner management portal.",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

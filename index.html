@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SS ENTERPRISES • ABHA App</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#28b95b"><script src="/socket.io/socket.io.js"></script><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><link rel="apple-touch-icon" href="logo.png">
+<style>
+:root{--green:#28b95b;--navy:#122033;--blue:#2563eb;--bg:#f5f7fb;--card:#fff;--muted:#667085;--border:#e4e7ec;--danger:#d92d20}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#182230}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.top{height:64px;background:linear-gradient(90deg,#1fb253,#52c96f);color:#fff;display:flex;align-items:center;padding:8px 18px;gap:12px;position:sticky;top:0;z-index:20}
+.logo{height:48px;width:48px;object-fit:cover;background:#063d69;border-radius:5px}.brand{font-weight:800;font-size:18px;flex:1}.top small{opacity:.9}
+.wrap{max-width:1150px;margin:auto;padding:22px}.login{min-height:calc(100vh - 64px);display:grid;place-items:center;padding:25px}
+.login-card{width:min(460px,100%);background:#fff;border:1px solid var(--border);border-radius:22px;padding:30px;box-shadow:0 18px 50px #10182814}
+.login-card .appicon{width:78px;height:78px;border-radius:18px;display:grid;place-items:center;background:#2563eb;color:#fff;font-size:34px;margin:auto}
+h1,h2,h3{margin:0 0 10px}.sub{color:var(--muted);margin-bottom:24px}
+label{display:block;font-size:13px;font-weight:700;margin:16px 0 7px}input,select,textarea{width:100%;border:1px solid #d0d5dd;border-radius:12px;padding:13px;background:#fff;outline:none}input:focus,select:focus,textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb18}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:800}.primary{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.outline{background:#fff;border:1px solid var(--border)}.danger{background:#fff1f0;color:var(--danger);border:1px solid #ffd6d2}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:20px}.tab{padding:10px 14px;border:1px solid var(--border);background:#fff;border-radius:999px;white-space:nowrap}.tab.active{background:var(--navy);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 5px 18px #10182808}.metric{font-size:28px;font-weight:850}.muted{color:var(--muted);font-size:13px}.section{margin-top:18px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800;background:#ecfdf3;color:#027a48}.offline{background:#f2f4f7;color:#475467}
+.hero{background:linear-gradient(135deg,#10243c,#1f3b5d);color:#fff;border-radius:20px;padding:24px;margin-bottom:18px}.hero p{color:#d0d5dd;max-width:700px}.actions{display:flex;gap:10px;flex-wrap:wrap}
+.notice{background:#fffaeb;border:1px solid #fedf89;padding:12px 14px;border-radius:12px;color:#7a2e0e;font-size:13px}
+.hidden{display:none!important}.footer{padding:30px 0;color:var(--muted);font-size:12px;text-align:center}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+@media(max-width:520px){.wrap{padding:14px}.grid{grid-template-columns:1fr 1fr}.metric{font-size:23px}.login-card{padding:22px}.top{padding:8px 12px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <img class="logo" src="logo.png" alt="SS ENTERPRISES">
+  <div class="brand">SS ENTERPRISES <small>• ABHA WORK PORTAL</small></div>
+  <button class="btn outline" onclick="logout()" id="logoutBtn" style="display:none">Logout</button>
+</header>
+
+<section id="loginView" class="login">
+  <div class="login-card">
+    <div class="appicon">▦</div>
+    <h1 style="text-align:center;margin-top:16px">SS ENTERPRISES</h1>
+    <p class="sub" style="text-align:center">ABHA Project Management System</p>
+    <div class="notice">Employee login is for work reporting. ABHA creation opens the official ABDM service; this portal does not collect Aadhaar or OTP.</div>
+    <label>Login type</label>
+    <select id="role"><option value="employee">Employee</option><option value="owner">Owner / Admin</option></select>
+    <label>Employee ID / Admin ID</label>
+    <input id="uid" value="EMP101" placeholder="EMP101">
+    <label>Password</label>
+    <input id="pwd" type="password" value="demo123" placeholder="Password">
+    <button class="btn primary" style="width:100%;margin-top:18px" onclick="login()">Secure Login</button>
+    <p class="muted" style="margin-top:12px">Demo owner: ADMIN001 / admin123 • Demo employee: EMP101 / demo123</p>
+  </div>
+</section>
+
+<main id="app" class="wrap hidden"></main>
+
+<script>
+const officialABHA = "https://abha.abdm.gov.in/";
+let session=null, socket=null, watchId=null, reportTimer=null, map=null, markers={};
+
+function connect(){
+  socket=io();
+  socket.on("connect",()=>console.log("Realtime connected"));
+  socket.on("state",data=>{ window.portalState=data; if(session?.role==="owner") renderOwner(data); });
+  socket.on("employeeUpdate",data=>{ if(session?.role==="owner"){ window.portalState=data.state; renderOwner(data.state); } });
+  socket.on("errorMessage",msg=>alert(msg));
+}
+function login(){
+  const role=document.getElementById("role").value, id=document.getElementById("uid").value.trim(), pw=document.getElementById("pwd").value;
+  socket.emit("login",{role,id,password:pw},res=>{
+    if(!res.ok){alert(res.message||"Login failed");return;}
+    session={role,id,token:res.token}; 
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("logoutBtn").style.display="block";
+    if(role==="owner") renderOwner(res.state); else renderEmployee(res.employee);
+  });
+}
+function logout(){
+  stopLocation();
+  if(socket) socket.emit("logout",{token:session?.token});
+  session=null;
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("loginView").classList.remove("hidden");
+  document.getElementById("logoutBtn").style.display="none";
+}
+function renderOwner(state){
+  document.getElementById("app").classList.remove("hidden");
+  const employees=state.employees||[];
+  const online=employees.filter(e=>e.status==="Online").length;
+  const cards=employees.reduce((a,e)=>a+(Number(e.cards)||0),0);
+  document.getElementById("app").innerHTML=`
+  <div class="hero"><h2>Owner Dashboard</h2><p>Real-time employee status, live location, attendance, ABHA work reporting and card-count monitoring.</p>
+  <div class="actions"><button class="btn green" onclick="requestOwnerState()">Refresh</button><button class="btn outline" onclick="exportCSV()">Export Report</button></div></div>
+  <div class="grid">
+   <div class="card"><div class="muted">Total Employees</div><div class="metric">${employees.length}</div></div>
+   <div class="card"><div class="muted">Online Now</div><div class="metric">${online}</div></div>
+   <div class="card"><div class="muted">Cards Reported</div><div class="metric">${cards}</div></div>
+   <div class="card"><div class="muted">Live Tracking</div><div class="metric">${online ? "ON" : "—"}</div></div>
+  </div>
+  <div class="card section"><h3>Live Employee Map</h3><div id="ownerMap" style="height:360px;border-radius:14px;overflow:hidden;background:#eef2f6"></div></div>
+  <div class="card section"><h3>Employee Live Status</h3>
+  <p class="muted">Live location is shared only after employee consent and browser location permission. The server broadcasts updates to the Owner dashboard.</p>
+  <div class="tablewrap"><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Last update</th><th>Location</th><th>Cards</th><th>Action</th></tr></thead><tbody>
+  ${employees.map(e=>`<tr><td>${e.id}</td><td><b>${e.name}</b></td><td><span class="badge ${e.status!=="Online"?"offline":""}">${e.status}</span></td><td>${e.last||"—"}</td><td>${e.location||"—"}</td><td>${e.cards||0}</td><td>${e.lat&&e.lng?`<button class="btn outline" onclick="focusMarker('${e.id}')">View</button>`:"—"}</td></tr>`).join("")}
+  </tbody></table></div></div>
+  <div class="two section"><div class="card"><h3>ABHA Work Reports</h3><p class="muted">Daily card count and authorised work details are stored on the server. Aadhaar and OTP are not collected here.</p></div>
+  <div class="card"><h3>Security & Consent</h3><p class="muted">Use HTTPS, secure authentication, role-based access, audit logs and a documented location-consent/retention policy in production.</p></div></div>`;
+  setTimeout(()=>initMap(employees),50);
+}
+function initMap(employees){
+  if(!window.L)return;
+  map=L.map("ownerMap").setView([20.5937,78.9629],5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}).addTo(map);
+  employees.filter(e=>e.lat&&e.lng).forEach(e=>{
+    markers[e.id]=L.marker([e.lat,e.lng]).addTo(map).bindPopup(`<b>${e.name}</b><br>${e.id}<br>${e.last||""}`);
+  });
+}
+function focusMarker(id){ if(markers[id]){map.setView(markers[id].getLatLng(),16);markers[id].openPopup();} }
+function requestOwnerState(){socket.emit("getState",{token:session.token},res=>{if(res.ok)renderOwner(res.state)})}
+
+function renderEmployee(e){
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("app").innerHTML=`
+  <div class="hero"><h2>Hello, ${e.name}</h2><p>SS ENTERPRISES employee workspace for attendance, ABHA work and authorised location reporting.</p></div>
+  <div class="two">
+   <div class="card"><h3>ABHA Card Portal</h3><p class="muted">ABHA creation/access opens the official ABDM service. This company app does <b>not</b> collect Aadhaar numbers, OTPs or ABHA passwords.</p><div class="actions"><button class="btn primary" onclick="window.open(officialABHA,'_blank')">Create / Access ABHA</button><button class="btn outline" onclick="alert('Use the official ABDM page for ABHA creation. After completion, record only authorised work details here.')">How it works</button></div></div>
+   <div class="card"><h3>Attendance</h3><p class="muted">Status: <b id="myStatus">${e.status}</b> • Last update: ${e.last||"—"}</p><div class="actions"><button class="btn green" onclick="startWork()">Start Work & Live Location</button><button class="btn danger" onclick="closeWork()">Close Work</button></div></div>
+  </div>
+  <div class="card section"><h3>Today's Work Report</h3>
+   <div class="two"><div><label>ABHA cards made today</label><input id="cards" type="number" min="0" value="${e.cards||0}"></div><div><label>Area / work location</label><input id="area" value="${e.area||""}" placeholder="e.g. Darbhanga"></div></div>
+   <label>Names / authorised work details</label><textarea id="details" rows="4" placeholder="Enter authorised beneficiary/work details.">${e.details||""}</textarea>
+   <button class="btn primary" style="margin-top:14px" onclick="saveReport()">Save Work Report</button>
+  </div>
+  <div class="card section"><h3>Live Location Sharing</h3><p id="loc" class="muted">${e.location||"Not sharing"}</p>
+   <div class="notice">Location is shared only after you choose <b>Start Work & Live Location</b> and grant browser permission. You can stop sharing with <b>Close Work</b>.</div>
+  </div>`;
+}
+function startWork(){
+  if(!navigator.geolocation){alert("This device/browser does not support location.");return}
+  socket.emit("startWork",{token:session.token},res=>{
+    if(!res.ok){alert(res.message);return}
+    navigator.geolocation.getCurrentPosition(pos=>sendLocation(pos),err=>alert("Location permission is required to share live location."),{enableHighAccuracy:true,timeout:15000});
+    watchId=navigator.geolocation.watchPosition(sendLocation,()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+    alert("Work started. Live location sharing is ON while this app is active.");
+    renderEmployee(res.employee);
+  });
+}
+function sendLocation(pos){
+  if(!session?.token)return;
+  socket.emit("locationUpdate",{token:session.token,lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy});
+}
+function stopLocation(){if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}}
+function closeWork(){
+  stopLocation();
+  socket.emit("closeWork",{token:session.token},res=>{if(res.ok)renderEmployee(res.employee);});
+}
+function saveReport(){
+  socket.emit("saveReport",{token:session.token,cards:Number(document.getElementById("cards").value||0),area:document.getElementById("area").value,details:document.getElementById("details").value},res=>{
+    if(res.ok){alert("Work report saved.");renderEmployee(res.employee)}else alert(res.message);
+  });
+}
+function exportCSV(){
+  socket.emit("getState",{token:session.token},res=>{
+    if(!res.ok)return;
+    let csv="Employee ID,Name,Status,Last Update,Latitude,Longitude,Location,Cards,Area,Details\\n";
+    res.state.employees.forEach(e=>csv+=`"${e.id}","${e.name}","${e.status}","${e.last||""}",${e.lat||""},${e.lng||""},"${(e.location||"").replaceAll('"','""')}",${e.cards||0},"${(e.area||"").replaceAll('"','""')}","${(e.details||"").replaceAll('"','""')}"\\n`);
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ss-enterprises-live-work-report.csv";a.click();
+  });
+}
+connect();
+</script>
+</body>
+</html>

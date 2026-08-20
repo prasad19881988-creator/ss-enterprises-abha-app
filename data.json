@@ -1,0 +1,32 @@
+{
+  "employees": [
+    {
+      "id": "EMP101",
+      "name": "Dev Krishna Rai",
+      "phone": "",
+      "status": "Offline",
+      "last": "—",
+      "cards": 0,
+      "location": "Not sharing",
+      "lat": null,
+      "lng": null,
+      "accuracy": null,
+      "area": "",
+      "details": ""
+    },
+    {
+      "id": "EMP102",
+      "name": "Employee 2",
+      "phone": "",
+      "status": "Offline",
+      "last": "—",
+      "cards": 0,
+      "location": "Not sharing",
+      "lat": null,
+      "lng": null,
+      "accuracy": null,
+      "area": "",
+      "details": ""
+    }
+  ]
+}
