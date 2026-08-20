@@ -1,319 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SS Enterprises | Work Dashboard</title>
-    <!-- Google Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SS ENTERPRISES — Work Dashboard</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f8fafc">
+
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; padding: 20px 15px 80px 15px; }
+
+    /* Container */
+    .container { max-width: 500px; margin: 0 auto; }
+
+    /* Dashboard Header */
+    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .header-title h1 { font-size: 1.75rem; font-weight: 800; color: #1e1b4b; margin-bottom: 4px; }
+    .header-title p { font-size: 0.9rem; color: #64748b; line-height: 1.3; }
     
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --bg-color: #f8f9fa;
-            --text-main: #2b2d42;
-            --text-muted: #8d99ae;
-        }
+    .date-badge { background: #ffffff; padding: 8px 14px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 600; color: #334155; text-align: center; }
+    .date-badge span { display: block; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
+    /* System Status Grid */
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 24px; }
+    .status-card { background: #ffffff; border-radius: 18px; padding: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; }
+    .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    .icon-blue { background: #e0e7ff; color: #4338ca; }
+    .icon-green { background: #dcfce7; color: #16a34a; }
+    
+    .status-info h4 { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+    .status-info p { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            min-height: 100vh;
-        }
+    /* ABHA Portal Card */
+    .main-card { background: #ffffff; border-radius: 24px; padding: 28px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; text-align: center; margin-bottom: 24px; }
+    .portal-icon { width: 64px; height: 64px; background: #eff6ff; color: #2563eb; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 16px auto; }
+    .main-card h2 { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
+    .main-card p { font-size: 0.9rem; color: #64748b; line-height: 1.5; margin-bottom: 24px; padding: 0 10px; }
+    
+    .btn-launch { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #3b82f6; color: white; border: none; padding: 16px; border-radius: 50px; font-weight: 700; font-size: 1.05rem; text-decoration: none; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35); transition: 0.2s; cursor: pointer; }
+    .btn-launch:active { transform: scale(0.98); }
 
-        /* Sidebar Design */
-        .sidebar {
-            width: 260px;
-            background: #ffffff;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-        }
+    /* Standard Cards & Forms */
+    .card { background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; margin-bottom: 20px; }
+    .card-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
 
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f1f2f6;
-        }
+    .form-group { margin-bottom: 14px; text-align: left; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; color: #0f172a; font-size: 0.9rem; outline: none; }
+    input:focus, select:focus { border-color: #3b82f6; background: #ffffff; }
 
-        .logo-area i {
-            font-size: 28px;
-            color: var(--primary);
-        }
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
 
-        .logo-area h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-        }
+    /* Map & Tables */
+    #map { height: 320px; width: 100%; border-radius: 14px; border: 1px solid #e2e8f0; margin-top: 10px; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; margin-top: 10px; }
+    th { background: #f1f5f9; color: #475569; padding: 10px; font-weight: 700; }
+    td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
 
-        .menu-item {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            color: var(--text-muted);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .menu-item.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
-        }
-
-        /* Main Content Area */
-        .main-content {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-        }
-
-        .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .greeting h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .greeting p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Work Profile Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
-        .stat-1 { background: #e0e8ff; color: var(--primary); }
-        .stat-2 { background: #e1f7e3; color: #2ecc71; }
-        
-        .stat-info h3 { font-size: 22px; margin-bottom: 2px; }
-        .stat-info p { color: var(--text-muted); font-size: 13px; }
-
-        /* Main Action Panel */
-        .action-panel {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .action-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 5px;
-            background: linear-gradient(90deg, var(--primary), #4cc9f0);
-        }
-
-        .action-panel i.main-icon {
-            font-size: 50px;
-            color: var(--primary);
-            margin-bottom: 20px;
-        }
-
-        .action-panel h2 {
-            font-size: 26px;
-            margin-bottom: 10px;
-        }
-
-        .action-panel p.desc {
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .btn-launch {
-            background: var(--primary);
-            color: white;
-            padding: 18px 40px;
-            font-size: 18px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
-        }
-
-        .btn-launch:hover {
-            transform: translateY(-3px);
-            background: var(--secondary);
-            box-shadow: 0 12px 25px rgba(67, 97, 238, 0.4);
-        }
-
-        /* Important Instructions */
-        .alert-box {
-            margin-top: 35px;
-            background: #fff8e6;
-            border: 1px solid #ffe8a1;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: left;
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-        }
-
-        .alert-box i {
-            color: #f39c12;
-            font-size: 24px;
-            margin-top: 2px;
-        }
-
-        .alert-text h4 {
-            color: #d35400;
-            margin-bottom: 5px;
-        }
-        
-        .alert-text p {
-            font-size: 14px;
-            color: #7f8c8d;
-            line-height: 1.6;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; padding: 15px; flex-direction: row; justify-content: space-between; align-items: center; }
-            .logo-area { margin-bottom: 0; padding-bottom: 0; border: none; }
-            .menu-item { display: none; }
-            .main-content { padding: 20px; }
-        }
-    </style>
+    /* Auth Tabs */
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 4px; border-radius: 14px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #64748b; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+    .tab-btn.active { background: #ffffff; color: #2563eb; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  </style>
 </head>
 <body>
 
-    <!-- Sidebar Dashboard -->
-    <div class="sidebar">
-        <div class="logo-area">
-            <i class="fa-solid fa-shield-halved"></i>
-            <h2>SS Enterprises</h2>
+  <div class="container">
+
+    <!-- LOGIN / SIGNUP SECTION -->
+    <div id="authSection" class="card">
+      <div class="auth-tabs">
+        <button class="tab-btn active" onclick="switchAuthTab('login')">Login</button>
+        <button class="tab-btn" onclick="switchAuthTab('signup')">Staff Signup</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Select Role</label>
+          <select id="loginRole" onchange="toggleLoginFields()">
+            <option value="employee">Field Employee</option>
+            <option value="owner">Owner / Admin</option>
+          </select>
         </div>
-        <a href="#" class="menu-item active"><i class="fa-solid fa-house"></i> Workspace</a>
-        <a href="#" class="menu-item"><i class="fa-solid fa-chart-line"></i> Daily Reports</a>
-        <a href="#" class="menu-item"><i class="fa-solid fa-users"></i> Staff Access</a>
-        <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> Settings</a>
+        <div class="form-group">
+          <label id="idLabel">Employee ID</label>
+          <input type="text" id="loginId" placeholder="e.g., EMP101" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary">🚀 Login Dashboard</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signupName" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="signupPhone" placeholder="Enter mobile number">
+        </div>
+        <div class="form-group">
+          <label>Assigned Area</label>
+          <input type="text" id="signupArea" placeholder="e.g., Darbhanga Donar">
+        </div>
+        <button type="submit" class="btn btn-success">✅ Register Staff</button>
+      </form>
     </div>
 
-    <!-- Main Workspace -->
-    <div class="main-content">
-        
-        <div class="top-header">
-            <div class="greeting">
-                <h1>Work Dashboard</h1>
-                <p>Manage daily operations and ABHA generations smoothly.</p>
-            </div>
-            <!-- Dynamic Date Script -->
-            <div style="background: white; padding: 10px 20px; border-radius: 30px; font-weight: 500; font-size: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                <i class="fa-regular fa-calendar" style="color: var(--primary); margin-right: 5px;"></i> 
-                <span id="currentDate"></span>
-            </div>
+    <!-- FIELD WORK DASHBOARD (EMPLOYEE VIEW) -->
+    <div id="employeeDashboard" style="display: none;">
+      
+      <!-- Top Header -->
+      <div class="dashboard-header">
+        <div class="header-title">
+          <h1>Work Dashboard</h1>
+          <p>Manage daily operations and ABHA generations smoothly.</p>
         </div>
-
-        <!-- Work Profile Stats (Placeholder values to look professional) -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon stat-1"><i class="fa-solid fa-id-card"></i></div>
-                <div class="stat-info">
-                    <h3>Portal Desk</h3>
-                    <p>Ready for Generation</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon stat-2"><i class="fa-solid fa-check-double"></i></div>
-                <div class="stat-info">
-                    <h3>System Status</h3>
-                    <p>All Services Online</p>
-                </div>
-            </div>
+        <div class="date-badge">
+          📅 <span>Friday, 21 August 2026</span>
         </div>
+      </div>
 
-        <!-- Core ABHA Generation Panel -->
-        <div class="action-panel">
-            <i class="fa-solid fa-laptop-medical main-icon"></i>
-            <h2>ABHA Card Generation Portal</h2>
-            <p class="desc">Is portal par click karte hi direct government website ek naye secure tab mein khulegi, jisse purane accounts kabhi hang nahi honge.</p>
-            
-            <!-- THE FIX: target="_blank" ensures no iframe errors -->
-            <a href="https://abha.abdm.gov.in/abha/v3/" target="_blank" class="btn-launch">
-                Launch Portal <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            </a>
-
-            <!-- Strict Instructions for Staff -->
-            <div class="alert-box">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div class="alert-text">
-                    <h4>Staff Workflow Rules</h4>
-                    <p>
-                        <b>1. Tab Close Rule:</b> Ek customer ka card download/print hone ke baad us tab (page) ko immediately band (close) kar dein.<br>
-                        <b>2. New Entry:</b> Naye customer ka kaam shuru karne ke liye wapas isi dashboard par aakar <b>"Launch Portal"</b> button par dobara click karein.
-                    </p>
-                </div>
-            </div>
+      <!-- Status Grid -->
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="icon-box icon-blue">💳</div>
+          <div class="status-info">
+            <h4>Portal Desk</h4>
+            <p>Ready for Generation</p>
+          </div>
         </div>
+        <div class="status-card">
+          <div class="icon-box icon-green">✔</div>
+          <div class="status-info">
+            <h4>System Status</h4>
+            <p>All Services Online</p>
+          </div>
+        </div>
+      </div>
 
+      <!-- Main Portal Launcher Card -->
+      <div class="main-card">
+        <div class="portal-icon">🏥</div>
+        <h2>ABHA Card Generation Portal</h2>
+        <p>Is portal par click karte hi direct government website ek naye secure tab mein khulegi, jisse purane accounts kabhi hang nahi honge.</p>
+        <a href="https://abha.abdm.gov.in/abha/v3/register" target="_blank" rel="noopener noreferrer" class="btn-launch">
+          Launch Portal ↗
+        </a>
+      </div>
+
+      <!-- Work Clock & GPS -->
+      <div class="card">
+        <div class="card-title">⏱️ Work Session & Location Tracking</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button id="startWorkBtn" onclick="startWork()" class="btn btn-success">▶️ Start Work</button>
+          <button id="closeWorkBtn" onclick="closeWork()" class="btn btn-danger" style="display: none;">⏹️ Close Work</button>
+        </div>
+        <p id="gpsStatus" style="font-size: 0.8rem; color: #64748b; margin-top: 10px; text-align: center;">GPS Status: Standby</p>
+      </div>
+
+      <!-- Add Customer Entry Form -->
+      <div class="card">
+        <div class="card-title">📝 Add ABHA Customer Record</div>
+        <form onsubmit="handleAddCustomer(event)">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <input type="text" id="custName" placeholder="Enter customer name" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="tel" id="custMobile" placeholder="10-digit mobile number">
+          </div>
+          <div class="form-group">
+            <label>ABHA Card Number</label>
+            <input type="text" id="custAbha" placeholder="e.g., 91-XXXX-XXXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label>Area / Ward</label>
+            <input type="text" id="custArea" placeholder="e.g., Ward 12, Darbhanga">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="custStatus">
+              <option value="Completed">Completed (Card Generated)</option>
+              <option value="Pending">Pending / Issue</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">💾 Save Customer Entry</button>
+        </form>
+      </div>
+
+      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Account</button>
     </div>
 
-    <script>
-        // Set current date in the header
-        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', dateOptions);
-    </script>
+    <!-- OWNER / ADMIN DASHBOARD -->
+    <div id="ownerDashboard" style="display: none;">
+      <div class="dashboard-header">
+        <div class="header-title">
+          <h1>Admin Control Panel</h1>
+          <p>Real-time field employee tracking & records.</p>
+        </div>
+      </div>
 
+      <!-- Map Card -->
+      <div class="card">
+        <div class="card-title">🗺️ Live Staff Field Map</div>
+        <div id="map"></div>
+      </div>
+
+      <!-- Staff List -->
+      <div class="card">
+        <div class="card-title">👥 Active Field Staff</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Status</th><th>Cards</th></tr>
+            </thead>
+            <tbody id="employeeTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customer Records -->
+      <div class="card">
+        <div class="card-title">📊 Customer Records</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Staff</th><th>Customer</th><th>ABHA</th><th>Action</th></tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">🚪 Logout Admin</button>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Libraries -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const socket = io();
+    let token = localStorage.getItem('ss_token');
+    let currentUser = JSON.parse(localStorage.getItem('ss_user') || 'null');
+    let userRole = localStorage.getItem('ss_role');
+    let watchPositionId = null;
+    let leafletMap = null;
+    let mapMarkers = {};
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (token && currentUser && userRole) {
+        restoreSession();
+      }
+    });
+
+    function switchAuthTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (tab === 'login') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('signupForm').style.display = 'none';
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'block';
+      }
+    }
+
+    function toggleLoginFields() {
+      const role = document.getElementById('loginRole').value;
+      document.getElementById('idLabel').innerText = role === 'owner' ? 'Owner Username' : 'Employee ID';
+      document.getElementById('loginId').placeholder = role === 'owner' ? 'SS' : 'e.g., EMP101';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const role = document.getElementById('loginRole').value;
+      const id = document.getElementById('loginId').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+
+      socket.emit('login', { role, id, password }, res => {
+        if (!res.ok) return alert('❌ ' + res.message);
+        token = res.token;
+        userRole = role;
+        currentUser = res.employee || { id: 'SS', name: 'Owner Admin' };
+
+        localStorage.setItem('ss_token', token);
+        localStorage.setItem('ss_role', userRole);
+        localStorage.setItem('ss_user', JSON.stringify(currentUser));
+        restoreSession();
+      });
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value;
+      const phone = document.getElementById('signupPhone').value;
+      const area = document.getElementById('signupArea').value;
+
+      socket.emit('signup', { name, phone, area }, res => {
+        if (!res.ok) return alert('❌ ' + res.message);
+        alert(`✅ Staff Registered!\nID: ${res.employee.id}\nPass: ${res.password}`);
+        switchAuthTab('login');
+      });
+    }
+
+    function restoreSession() {
+      document.getElementById('authSection').style.display = 'none';
+      if (userRole === 'owner') {
+        document.getElementById('ownerDashboard').style.display = 'block';
+        document.getElementById('employeeDashboard').style.display = 'none';
+        initMap();
+        fetchState();
+      } else {
+        document.getElementById('employeeDashboard').style.display = 'block';
+        document.getElementById('ownerDashboard').style.display = 'none';
+      }
+    }
+
+    function startWork() {
+      socket.emit('startWork', { token }, res => {
+        if (!res.ok) return alert(res.message);
+        document.getElementById('startWorkBtn').style.display = 'none';
+        document.getElementById('closeWorkBtn').style.display = 'block';
+        document.getElementById('gpsStatus').innerText = '📍 Live GPS Active';
+        startGpsTracking();
+      });
+    }
+
+    function closeWork() {
+      socket.emit('closeWork', { token }, res => {
+        if (!res.ok) return alert(res.message);
+        document.getElementById('startWorkBtn').style.display = 'block';
+        document.getElementById('closeWorkBtn').style.display = 'none';
+        document.getElementById('gpsStatus').innerText = 'GPS Status: Standby';
+        if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
+      });
+    }
+
+    function startGpsTracking() {
+      if ('geolocation' in navigator) {
+        watchPositionId = navigator.geolocation.watchPosition(
+          pos => {
+            socket.emit('locationUpdate', { token, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+          },
+          err => console.error(err),
+          { enableHighAccuracy: true }
+        );
+      }
+    }
+
+    function handleAddCustomer(e) {
+      e.preventDefault();
+      const payload = {
+        token,
+        name: document.getElementById('custName').value,
+        mobile: document.getElementById('custMobile').value,
+        abha: document.getElementById('custAbha').value,
+        area: document.getElementById('custArea').value,
+        status: document.getElementById('custStatus').value
+      };
+
+      socket.emit('addCustomer', payload, res => {
+        if (!res.ok) return alert(res.message);
+        alert('✅ Customer Saved!');
+        e.target.reset();
+      });
+    }
+
+    function fetchState() {
+      socket.emit('getState', { token }, res => {
+        if (res.ok) renderOwner(res.state);
+      });
+    }
+
+    socket.on('state', state => {
+      if (userRole === 'owner') renderOwner(state);
+    });
+
+    function renderOwner(state) {
+      document.getElementById('employeeTableBody').innerHTML = state.employees.map(e => `
+        <tr><td><b>${e.id}</b></td><td>${e.name}</td><td>${e.status}</td><td>${e.cards || 0}</td></tr>
+      `).join('');
+
+      document.getElementById('customerTableBody').innerHTML = state.customers.map(c => `
+        <tr><td>${c.date || '—'}</td><td>${c.employeeName || '—'}</td><td><b>${c.name}</b></td><td>${c.abha || '—'}</td><td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem;" onclick="deleteCustomer('${c.id}')">Delete</button></td></tr>
+      `).join('');
+    }
+
+    function deleteCustomer(id) {
+      if (confirm('Delete record?')) socket.emit('deleteCustomer', { token, id });
+    }
+
+    function initMap() {
+      if (!leafletMap && document.getElementById('map')) {
+        leafletMap = L.map('map').setView([26.1542, 85.8918], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletMap);
+      }
+    }
+
+    function logout() {
+      if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
+      try { socket.emit('logout', { token }); } catch (e) {}
+      localStorage.clear();
+      sessionStorage.clear();
+      location.reload();
+    }
+  </script>
 </body>
 </html>
