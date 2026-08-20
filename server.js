@@ -9,7 +9,7 @@ const app=express();
 const server=http.createServer(app);
 const io=new Server(server,{cors:{origin:"*"}});
 app.use(express.json());
-app.use(express.static(path.join(__dirname,"public")));
+app.use(express.static(__dirname));
 
 const DB=path.join(__dirname,"data.json");
 const defaultDB={
@@ -75,7 +75,7 @@ io.on("connection",socket=>{
 });
 
 app.get("/health",(req,res)=>res.json({ok:true,service:"SS ENTERPRISES ABHA REALTIME PORTAL"}));
-app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
+app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
 
 const PORT=process.env.PORT||3000;
 server.listen(PORT,()=>console.log(`SS ENTERPRISES realtime portal on :${PORT}`));
