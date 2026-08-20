@@ -3,7 +3,7 @@
     {
       "id": "EMP101",
       "name": "Dev Krishna Rai",
-      "phone": "",
+      "phone": "+91-9876543210",
       "status": "Offline",
       "last": "—",
       "cards": 0,
@@ -11,13 +11,13 @@
       "lat": null,
       "lng": null,
       "accuracy": null,
-      "area": "",
-      "details": ""
+      "area": "Darbhanga",
+      "details": "Field Executive"
     },
     {
       "id": "EMP102",
       "name": "Employee 2",
-      "phone": "",
+      "phone": "+91-9876543211",
       "status": "Offline",
       "last": "—",
       "cards": 0,
@@ -25,8 +25,8 @@
       "lat": null,
       "lng": null,
       "accuracy": null,
-      "area": "",
-      "details": ""
+      "area": "Darbhanga",
+      "details": "Field Executive"
     }
   ]
 }
