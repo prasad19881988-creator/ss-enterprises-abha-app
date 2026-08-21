@@ -4,68 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🔱 SS ENTERPRISES — Royal Work Dashboard</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#080a10">
-
-  <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com" />
-  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background: #080a10; color: #f3f4f6; min-height: 100vh; padding-bottom: 80px; }
-
-    /* Royal Header */
     header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 2px solid #d97706; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 25px rgba(217, 119, 6, 0.15); }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand-title { font-weight: 900; font-size: 1.25rem; background: linear-gradient(135deg, #fbbf24, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.8px; }
     .brand-subtitle { font-size: 0.68rem; color: #9ca3af; font-weight: 500; letter-spacing: 0.5px; }
     .user-badge { font-size: 0.8rem; font-weight: 700; background: #1e1b4b; padding: 6px 14px; border-radius: 20px; color: #fbbf24; border: 1px solid #d97706; }
-
-    /* Layout & Cards */
     .container { max-width: 1050px; margin: 20px auto; padding: 0 15px; }
-    .card { background: linear-gradient(145deg, #0f172a, #1e1b4b); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 20px; padding: 22px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+    .card { background: linear-gradient(145deg, #0f172a, #1e1b4b); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 20px; padding: 22px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
     .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #f59e0b, #d97706, #7c2d12); }
     .card-title { font-size: 1.15rem; font-weight: 800; color: #fbbf24; margin-bottom: 18px; border-bottom: 1px solid rgba(217, 119, 6, 0.2); padding-bottom: 10px; }
-
-    /* Stats Grid */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 22px; }
     .stat-box { background: rgba(15, 23, 42, 0.8); border: 1px solid #d97706; border-radius: 16px; padding: 18px; text-align: center; }
-    .stat-number { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-number { font-size: 2rem; font-weight: 900; color: #fbbf24; }
     .stat-label { font-size: 0.78rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700; }
-
-    /* Forms */
-    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group { margin-bottom: 16px; }
     label { display: block; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin-bottom: 6px; }
-    input, select, textarea { width: 100%; background: #0f172a; border: 1px solid #374151; border-radius: 12px; padding: 13px 15px; color: #ffffff; font-size: 0.95rem; outline: none; }
-
-    /* Luxury Buttons */
-    .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 800; font-size: 0.98rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
-    .btn-gold { background: linear-gradient(135deg, #f59e0b, #b45309); color: #000000; font-weight: 900; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4); }
+    input, select { width: 100%; background: #0f172a; border: 1px solid #374151; border-radius: 12px; padding: 13px 15px; color: #ffffff; outline: none; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-gold { background: linear-gradient(135deg, #f59e0b, #b45309); color: #000000; font-weight: 900; }
     .btn-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
     .btn-success { background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; }
     .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffffff; }
-
     #map { height: 380px; width: 100%; border-radius: 14px; border: 1px solid #d97706; margin-top: 10px; background: #0f172a; }
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
-    th { background: #1e1b4b; color: #fbbf24; padding: 12px; border-bottom: 2px solid #d97706; font-weight: 800; }
-    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; }
-    
-    .badge-online { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 12px; border-radius: 20px; font-weight: 800; border: 1px solid #10b981; font-size: 0.75rem; }
-    .badge-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 4px 12px; border-radius: 20px; font-weight: 800; border: 1px solid #64748b; font-size: 0.75rem; }
-
-    .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; border: 1px solid #374151; }
+    th { background: #1e1b4b; color: #fbbf24; padding: 12px; border-bottom: 2px solid #d97706; }
+    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .badge-online { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 12px; border-radius: 20px; border: 1px solid #10b981; font-size: 0.75rem; }
+    .badge-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 4px 12px; border-radius: 20px; border: 1px solid #64748b; font-size: 0.75rem; }
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; }
     .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: #9ca3af; border-radius: 10px; cursor: pointer; font-weight: 800; }
     .tab-btn.active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; }
   </style>
 </head>
 <body>
 
-  <!-- Royal Header -->
   <header>
     <div class="brand">
-      <span class="trishul-logo"><img src="logo.png" alt="🔱" style="height:32px; vertical-align:middle;"></span>
+      <span class="trishul-logo"><img src="logo.png" alt="🔱" style="height:30px; vertical-align:middle;"></span>
       <div>
         <div class="brand-title">SS ENTERPRISES</div>
         <div class="brand-subtitle">AAPKI SEVA ME HAMARI KHUSHI</div>
@@ -76,14 +56,13 @@
 
   <div class="container">
 
-    <!-- AUTH SECTION -->
+    <!-- AUTH MODULE -->
     <div id="authSection" class="card" style="max-width: 480px; margin: 30px auto;">
       <div class="auth-tabs">
         <button id="loginTab" class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
         <button id="signupTab" class="tab-btn" onclick="switchAuthTab('signup')">Staff Registration</button>
       </div>
 
-      <!-- Login Form -->
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>Select Role</label>
@@ -103,7 +82,6 @@
         <button type="submit" class="btn btn-gold">🚀 Login To Dashboard</button>
       </form>
 
-      <!-- Signup Form -->
       <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
         <div class="form-group">
           <label>Full Name</label>
@@ -124,24 +102,24 @@
     <!-- STAFF TRACKING WORKSPACE -->
     <div id="staffWorkspace" class="card" style="display: none;">
       <div class="card-title">👋 Field Work Controls (<span id="staffNameLabel"></span>)</div>
-      <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye niche diye gaye button par click karein.</p>
+      <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye aur GPS location bhejane ke liye niche button dabayein.</p>
       <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
 
-      <!-- ABHA PORTAL INTEGRATION INSIDE WORKSPACE -->
+      <!-- ABHA DATA PORTAL BOX -->
       <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
         <div class="card-title">🔱 ABHA Customer Entry Portal</div>
-        <form id="customerForm" onsubmit="handleAddCustomer(event)">
+        <form id="customerForm" onsubmit="handleCustomerSubmit(event)">
           <div class="form-group">
             <label>Customer Full Name</label>
-            <input type="text" id="cusName" placeholder="Enter name" required>
+            <input type="text" id="cusName" placeholder="Enter customer name" required>
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="text" id="cusMobile" placeholder="10 digits">
+            <input type="text" id="cusMobile" placeholder="10 digits number">
           </div>
           <div class="form-group">
-            <label>ABHA Card Number</label>
-            <input type="text" id="cusAbha" placeholder="14 Digits Card ID">
+            <label>ABHA Card ID</label>
+            <input type="text" id="cusAbha" placeholder="14 Digits Unique ABHA ID">
           </div>
           <button type="submit" class="btn btn-gold">📥 Save ABHA Entry</button>
         </form>
@@ -166,7 +144,6 @@
         <div id="map"></div>
       </div>
 
-      <!-- Active Staff Control Table -->
       <div class="card">
         <div class="card-title">👥 Active Field Staff Control</div>
         <div class="table-responsive">
@@ -187,3 +164,29 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="card-title">📋 Registered ABHA Customer Logs</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Mobile</th>
+                <th>ABHA ID</th>
+                <th>Done By</th>
+                <th>Date & Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com"></script>
+  <script>
+    let myEmpId = null;
+    let locationIntervalId = null;
