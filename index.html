@@ -117,6 +117,12 @@
       <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
 
       <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
+        <div class="card-title">🔱 ABHA Portal</div>
+        <p style="margin-bottom:15px; color:#9ca3af;">ABHA ka official kaam karne ke liye niche button dabayein. Portal browser mein khulega. Kaam khatam hone par browser ka Back button dabakar SS ENTERPRISES app mein wapas aa sakte hain.</p>
+        <button type="button" class="btn btn-primary" onclick="openAbhaPortal()">🌐 Open ABHA Portal</button>
+      </div>
+
+      <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
         <div class="card-title">🔱 ABHA Customer Entry Portal</div>
         <form id="customerForm" onsubmit="handleCustomerSubmit(event)">
           <div class="form-group">
@@ -475,6 +481,12 @@
     function startAdminRefresh() {
       if (adminStateIntervalId) clearInterval(adminStateIntervalId);
       adminStateIntervalId = setInterval(refreshAdminState, 5000);
+    }
+
+    function openAbhaPortal() {
+      // Official ABHA portal. It opens in the browser; browser Back returns to this app.
+      const url = 'https://abha.abdm.gov.in/abha/v3/';
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     async function handleCustomerSubmit(event) {
