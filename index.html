@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#080a10">
 
   <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com" />
   
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -49,7 +49,6 @@
     .btn-gold { background: linear-gradient(135deg, #f59e0b, #b45309); color: #000000; font-weight: 900; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4); }
     .btn-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; box-shadow: 0 4px 18px rgba(59, 130, 246, 0.4); }
     .btn-success { background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4); }
-    .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffffff; box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4); }
 
     /* Map Box */
     #map { height: 380px; width: 100%; border-radius: 14px; border: 1px solid #d97706; margin-top: 10px; background: #0f172a; }
@@ -68,11 +67,6 @@
     .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; border: 1px solid #374151; }
     .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: #9ca3af; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 0.9rem; transition: 0.2s; }
     .tab-btn.active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
-
-    /* ABHA Portal Box */
-    .abha-hub { background: linear-gradient(135deg, #1e1b4b, #311b92); border: 1px solid #6366f1; border-radius: 20px; padding: 25px; text-align: center; margin-bottom: 22px; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2); }
-    .abha-hub h2 { font-size: 1.45rem; color: #ffffff; margin-bottom: 10px; font-weight: 900; }
-    .abha-hub p { font-size: 0.9rem; color: #c7d2fe; margin-bottom: 20px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -91,33 +85,30 @@
 
   <div class="container">
 
-    <!-- LOGIN & SIGNUP PANEL -->
+    <!-- AUTH PANEL (LOGIN & REGISTRATION) -->
     <div id="authSection" class="card" style="max-width: 480px; margin: 30px auto;">
       <div class="auth-tabs">
-        <button class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
-        <button class="tab-btn" onclick="switchAuthTab('signup')">Staff Registration</button>
+        <button id="loginTab" class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
+        <button id="signupTab" class="tab-btn" onclick="switchAuthTab('signup')">Staff Registration</button>
       </div>
 
       <!-- Login Form -->
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>Select Role</label>
-          <select id="loginRole" onchange="toggleLoginFields()">
+          <select id="loginRole">
             <option value="employee">Field Staff / Employee</option>
             <option value="owner">Owner / Admin Control</option>
           </select>
         </div>
-
         <div class="form-group">
-          <label id="idLabel">Employee ID</label>
-          <input type="text" id="loginId" placeholder="e.g., EMP101" required>
+          <label>Employee ID / Admin Username</label>
+          <input type="text" id="loginId" placeholder="e.g., EMP101 or ADMIN" required>
         </div>
-
         <div class="form-group">
           <label>Password</label>
           <input type="password" id="loginPassword" placeholder="Enter password" required>
         </div>
-
         <button type="submit" class="btn btn-gold">🚀 Login To Dashboard</button>
       </form>
 
@@ -125,367 +116,64 @@
       <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" id="signupName" placeholder="Enter staff full name" required>
+          <input type="text" id="signupName" placeholder="Enter Full Name" required>
         </div>
         <div class="form-group">
           <label>Mobile Number</label>
-          <input type="tel" id="signupPhone" placeholder="10-digit mobile number">
+          <input type="text" id="signupMobile" placeholder="10 Digits Mobile Number" required>
         </div>
         <div class="form-group">
-          <label>Assigned Work Area</label>
-          <input type="text" id="signupArea" placeholder="e.g., Darbhanga Donar">
+          <label>Assigned Area</label>
+          <input type="text" id="signupArea" placeholder="e.g., Raja Pakar, Darbhanga" required>
         </div>
-        <button type="submit" class="btn btn-success">✅ Register Staff Account</button>
+        <button type="submit" class="btn btn-primary">📝 Register Staff Account</button>
       </form>
     </div>
 
-    <!-- FIELD EMPLOYEE DASHBOARD -->
-    <div id="employeeDashboard" style="display: none;">
-      
-      <!-- Work Clock & GPS -->
-      <div class="card">
-        <div class="card-title"><span>⏱️ Daily Work Clock & GPS Location</span></div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <button id="startWorkBtn" onclick="startWork()" class="btn btn-success">▶️ Start Field Work</button>
-          <button id="closeWorkBtn" onclick="closeWork()" class="btn btn-danger" style="display: none;">⏹️ Close Field Work</button>
-        </div>
-        <p id="gpsStatus" style="font-size: 0.85rem; color: #9ca3af; margin-top: 12px; text-align: center;">GPS Status: Standby / Inactive</p>
-      </div>
-
-      <!-- Government ABHA Launch Station -->
-      <div class="abha-hub">
-        <h2>🏛️ Government Official ABHA Portal Station</h2>
-        <p>Is button par click karte hi ABDM portal direct browser tab mein khulega. Card banane ke baad jaise hi wapas aayenge, aapki app aage ka kaam jari rakhegi.</p>
-        <a href="https://abha.abdm.gov.in/abha/v3/register" target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.05rem; padding: 16px;">
-          ✨ Launch Official Government ABHA Portal ↗
-        </a>
-      </div>
-
-      <!-- Add Customer Entry Form -->
-      <div class="card">
-        <div class="card-title"><span>📝 Save Customer ABHA Card Record</span></div>
-        <form onsubmit="handleAddCustomer(event)">
-          <div class="form-group">
-            <label>Customer Name *</label>
-            <input type="text" id="custName" placeholder="Enter full name" required>
-          </div>
-          <div class="form-group">
-            <label>Mobile Number</label>
-            <input type="tel" id="custMobile" placeholder="Customer 10-digit number">
-          </div>
-          <div class="form-group">
-            <label>Generated ABHA Number</label>
-            <input type="text" id="custAbha" placeholder="e.g., 91-XXXX-XXXX-XXXX">
-          </div>
-          <div class="form-group">
-            <label>Location / Ward Area</label>
-            <input type="text" id="custArea" placeholder="e.g., Ward 12, Darbhanga">
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="custStatus">
-              <option value="Completed">Completed (Card Generated)</option>
-              <option value="Pending">Pending / Issue</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-gold">💾 Save Work Entry</button>
-        </form>
-      </div>
-
-      <button class="btn btn-danger" onclick="logout()" style="margin-top: 15px;">🚪 Logout Staff Account</button>
+    <!-- STAFF TRACKING WORKSPACE (Login Ke Baad Staff Ko Dikhega) -->
+    <div id="staffWorkspace" class="card" style="display: none;">
+      <div class="card-title">👋 Field Work Controls (<span id="staffNameLabel"></span>)</div>
+      <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye niche diye gaye button par click karein taaki aapki location report ho sake.</p>
+      <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
     </div>
 
-    <!-- OWNER / ADMIN CONTROL DASHBOARD -->
-    <div id="ownerDashboard" style="display: none;">
+    <!-- ADMIN PANEL DASHBOARD (Login Ke Baad Admin Ko Dikhega) -->
+    <div id="adminPanel" style="display: none;">
       
-      <!-- Analytics Summary -->
+      <!-- Stats Overview -->
       <div class="stats-grid">
         <div class="stat-box">
-          <div class="stat-label">Total Staff</div>
-          <div class="stat-number" id="statTotalStaff">0</div>
+          <div class="stat-label">Total Field Staff</div>
+          <div id="totalStaffCount" class="stat-number">0</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Online Today</div>
-          <div class="stat-number" id="statOnlineStaff">0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Total ABHA Cards</div>
-          <div class="stat-number" id="statTotalCards">0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Customer Logs</div>
-          <div class="stat-number" id="statTotalLogs">0</div>
+          <div class="stat-label">Active On Duty</div>
+          <div id="activeStaffCount" class="stat-number">0</div>
         </div>
       </div>
 
-      <!-- Live GPS Map -->
+      <!-- Real-Time Map Tracking -->
       <div class="card">
-        <div class="card-title"><span>🗺️ Real-Time Employee Field Live Tracking Map</span></div>
+        <div class="card-title">🗺 Real-Time Employee Field Live Tracking Map</div>
         <div id="map"></div>
       </div>
 
-      <!-- Staff Monitoring Table -->
+      <!-- Active Staff Control Table -->
       <div class="card">
-        <div class="card-title"><span>👥 Active Field Staff Control</span></div>
+        <div class="card-title">👥 Active Field Staff Control</div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>Emp ID</th>
                 <th>Staff Name</th>
-                <th>Status</th>
-                <th>Cards Created</th>
-                <th>Area</th>
+                <th>Employee ID</th>
+                <th>Mobile</th>
+                <th>Area Location</th>
+                <th>GPS Status</th>
                 <th>Last Sync</th>
               </tr>
             </thead>
-            <tbody id="employeeTableBody"></tbody>
+            <tbody id="staffTableBody">
+              <!-- Yahan database se staff automatic load hoga -->
+            </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Customer Records & Report Generator -->
-      <div class="card">
-        <div class="card-title">
-          <span>📊 Customer ABHA Work Records</span>
-          <button class="btn btn-gold" style="width: auto; padding: 6px 14px; font-size: 0.8rem;" onclick="window.print()">🖨️ Print Report</button>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Staff</th>
-                <th>Customer Name</th>
-                <th>Mobile</th>
-                <th>ABHA Number</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="customerTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <button class="btn btn-danger" onclick="logout()" style="margin-top: 15px;">🚪 Logout Admin Panel</button>
-    </div>
-
-  </div>
-
-  <!-- JavaScript Libraries -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <script>
-    const socket = (typeof io !== 'undefined') ? io() : null;
-    let token = localStorage.getItem('ss_token');
-    let currentUser = JSON.parse(localStorage.getItem('ss_user') || 'null');
-    let userRole = localStorage.getItem('ss_role');
-    let watchPositionId = null;
-    let leafletMap = null;
-    let mapMarkers = {};
-
-    window.addEventListener('DOMContentLoaded', () => {
-      if (token && currentUser && userRole) {
-        restoreSession();
-      }
-    });
-
-    function switchAuthTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      if (tab === 'login') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('signupForm').style.display = 'none';
-      } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('signupForm').style.display = 'block';
-      }
-    }
-
-    function toggleLoginFields() {
-      const role = document.getElementById('loginRole').value;
-      document.getElementById('idLabel').innerText = role === 'owner' ? 'Owner Username' : 'Employee ID';
-      document.getElementById('loginId').placeholder = role === 'owner' ? 'ADMIN or SS' : 'e.g., EMP101';
-    }
-
-    // FIXED LOGIN HANDLER WITH YOUR EXACT PRESET PASSWORDS
-    function handleLogin(e) {
-      e.preventDefault();
-      const role = document.getElementById('loginRole').value;
-      const id = document.getElementById('loginId').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
-
-      // Check Exact Passwords
-      if (role === 'owner') {
-        if (password === 'ADMIN@12345' || password === '12345') {
-          loginSuccess('owner', { id: id || 'ADMIN', name: 'Owner Admin' });
-          return;
-        }
-      } else {
-        if (password === 'SS@12345' || password === '12345') {
-          loginSuccess('employee', { id: id || 'EMP101', name: 'Field Employee' });
-          return;
-        }
-      }
-
-      // If socket is connected, attempt server validation as fallback
-      if (socket) {
-        socket.emit('login', { role, id, password }, res => {
-          if (res && res.ok) {
-            token = res.token;
-            loginSuccess(role, res.employee || { id, name: id });
-          } else {
-            alert('❌ Wrong Password! Admin Password is ADMIN@12345 and Employee Password is SS@12345');
-          }
-        });
-      } else {
-        alert('❌ Invalid Credentials!\n\nUse Admin Password: ADMIN@12345\nUse Employee Password: SS@12345');
-      }
-    }
-
-    function loginSuccess(role, user) {
-      token = 'token_' + Date.now();
-      userRole = role;
-      currentUser = user;
-
-      localStorage.setItem('ss_token', token);
-      localStorage.setItem('ss_role', userRole);
-      localStorage.setItem('ss_user', JSON.stringify(currentUser));
-
-      restoreSession();
-    }
-
-    function handleSignup(e) {
-      e.preventDefault();
-      const name = document.getElementById('signupName').value;
-      const phone = document.getElementById('signupPhone').value;
-      const area = document.getElementById('signupArea').value;
-
-      const newId = 'EMP' + Math.floor(100 + Math.random() * 900);
-      alert(`✅ Registration Successful!\n\nYour Assigned ID: ${newId}\nYour Password: SS@12345`);
-      
-      switchAuthTab('login');
-      document.getElementById('loginId').value = newId;
-      document.getElementById('loginPassword').value = 'SS@12345';
-    }
-
-    function restoreSession() {
-      document.getElementById('authSection').style.display = 'none';
-      document.getElementById('userStatus').style.display = 'inline-block';
-
-      if (userRole === 'owner') {
-        document.getElementById('ownerDashboard').style.display = 'block';
-        document.getElementById('employeeDashboard').style.display = 'none';
-        document.getElementById('userStatus').innerText = '👑 Owner Admin';
-        initMap();
-        fetchState();
-      } else {
-        document.getElementById('employeeDashboard').style.display = 'block';
-        document.getElementById('ownerDashboard').style.display = 'none';
-        document.getElementById('userStatus').innerText = `👷 ${currentUser.name} (${currentUser.id})`;
-      }
-    }
-
-    function startWork() {
-      document.getElementById('startWorkBtn').style.display = 'none';
-      document.getElementById('closeWorkBtn').style.display = 'block';
-      document.getElementById('gpsStatus').innerText = '📍 Live GPS Location Tracking Active...';
-      startGpsTracking();
-    }
-
-    function closeWork() {
-      document.getElementById('startWorkBtn').style.display = 'block';
-      document.getElementById('closeWorkBtn').style.display = 'none';
-      document.getElementById('gpsStatus').innerText = 'GPS Status: Standby / Inactive';
-      if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
-    }
-
-    function startGpsTracking() {
-      if ('geolocation' in navigator) {
-        watchPositionId = navigator.geolocation.watchPosition(
-          pos => {
-            const { latitude, longitude, accuracy } = pos.coords;
-            if (socket) socket.emit('locationUpdate', { token, lat: latitude, lng: longitude, accuracy });
-            document.getElementById('gpsStatus').innerText = `📍 Live Position: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} (±${Math.round(accuracy)}m)`;
-          },
-          err => console.error(err),
-          { enableHighAccuracy: true }
-        );
-      }
-    }
-
-    function handleAddCustomer(e) {
-      e.preventDefault();
-      alert('✅ Customer Record Saved Successfully!');
-      e.target.reset();
-    }
-
-    function fetchState() {
-      const mockEmployees = [
-        { id: 'EMP101', name: 'Sachchidanand', status: 'Online', cards: 14, area: 'Darbhanga Donar', last: 'Just Now', lat: 26.1542, lng: 85.8918 }
-      ];
-      const mockCustomers = [
-        { date: '2026-08-21', employeeName: 'Sachchidanand', name: 'Ramesh Kumar', mobile: '9876543210', abha: '91-8842-1029-4411', status: 'Completed', id: 'c1' }
-      ];
-
-      renderOwnerDashboard({ employees: mockEmployees, customers: mockCustomers });
-    }
-
-    function renderOwnerDashboard(state) {
-      const employees = state.employees || [];
-      const customers = state.customers || [];
-      
-      document.getElementById('statTotalStaff').innerText = employees.length;
-      document.getElementById('statOnlineStaff').innerText = employees.filter(e => e.status === 'Online').length;
-      document.getElementById('statTotalCards').innerText = employees.reduce((acc, curr) => acc + (curr.cards || 0), 0);
-      document.getElementById('statTotalLogs').innerText = customers.length;
-
-      document.getElementById('employeeTableBody').innerHTML = employees.map(e => `
-        <tr>
-          <td><b>${e.id}</b></td>
-          <td>${e.name}</td>
-          <td><span class="${e.status === 'Online' ? 'badge-online' : 'badge-offline'}">${e.status}</span></td>
-          <td><b>${e.cards}</b></td>
-          <td>${e.area}</td>
-          <td>${e.last}</td>
-        </tr>
-      `).join('');
-
-      document.getElementById('customerTableBody').innerHTML = customers.map(c => `
-        <tr>
-          <td>${c.date}</td>
-          <td>${c.employeeName}</td>
-          <td><b>${c.name}</b></td>
-          <td>${c.mobile}</td>
-          <td>${c.abha}</td>
-          <td><span class="badge-online">${c.status}</span></td>
-          <td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem; width:auto;" onclick="this.closest('tr').remove()">🗑️ Delete</button></td>
-        </tr>
-      `).join('');
-
-      employees.forEach(e => {
-        if (e.lat && e.lng && leafletMap) {
-          L.marker([e.lat, e.lng]).addTo(leafletMap).bindPopup(`<b>${e.name} (${e.id})</b><br>Cards: ${e.cards}`);
-        }
-      });
-    }
-
-    function initMap() {
-      if (!leafletMap && document.getElementById('map')) {
-        leafletMap = L.map('map').setView([26.1542, 85.8918], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletMap);
-      }
-    }
-
-    function logout() {
-      if (watchPositionId) navigator.geolocation.clearWatch(watchPositionId);
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.reload();
-    }
-  </script>
-</body>
-</html>
