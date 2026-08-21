@@ -17,7 +17,8 @@ app.use(express.static(__dirname));
 
 // 1. MONGODB PERMANENT DATABASE CONNECTION
 // Safe internal cloud database for SS Enterprises
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://ss_user:SS_Abha_2026@cluster0.rtw9b.mongodb.net/ss_enterprises?retryWrites=true&w=majority";
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://ss_public:SS_Abha_2026_Live@cluster0.nbeu6.mongodb.net/ss_enterprises?retryWrites=true&w=majority";
+
 
 mongoose.connect(mongoURI)
   .then(() => console.log('✅ Permanent Cloud Database Connected!'))
