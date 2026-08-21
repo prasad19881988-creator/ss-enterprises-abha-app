@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
   <title>🔱 SS ENTERPRISES — Royal Work Dashboard</title>
-  <link rel="stylesheet" href="https://unpkg.com" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background: #080a10; color: #f3f4f6; min-height: 100vh; padding-bottom: 80px; }
@@ -39,10 +41,21 @@
     .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; }
     .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: #9ca3af; border-radius: 10px; cursor: pointer; font-weight: 800; }
     .tab-btn.active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; }
+    .message { margin-top: 14px; padding: 10px 12px; border-radius: 10px; display: none; font-weight: 700; font-size: 0.9rem; }
+    .message.ok { display: block; background: rgba(16,185,129,.15); border: 1px solid #10b981; color: #6ee7b7; }
+    .message.error { display: block; background: rgba(239,68,68,.15); border: 1px solid #ef4444; color: #fca5a5; }
+    .small-note { color:#9ca3af; font-size:.82rem; margin-top:10px; line-height:1.5; }
+    @media (max-width: 600px) {
+      header { padding: 12px 14px; }
+      .brand-title { font-size: 1.05rem; }
+      .brand-subtitle { font-size: .58rem; }
+      .container { padding: 0 10px; }
+      .card { padding: 17px; }
+      #map { height: 330px; }
+    }
   </style>
 </head>
 <body>
-
   <header>
     <div class="brand">
       <span class="trishul-logo"><img src="logo.png" alt="🔱" style="height:30px; vertical-align:middle;"></span>
@@ -55,8 +68,6 @@
   </header>
 
   <div class="container">
-
-    <!-- AUTH MODULE -->
     <div id="authSection" class="card" style="max-width: 480px; margin: 30px auto;">
       <div class="auth-tabs">
         <button id="loginTab" class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
@@ -97,15 +108,14 @@
         </div>
         <button type="submit" class="btn btn-primary">📝 Register Staff Account</button>
       </form>
+      <div id="authMessage" class="message"></div>
     </div>
 
-    <!-- STAFF TRACKING WORKSPACE -->
     <div id="staffWorkspace" class="card" style="display: none;">
       <div class="card-title">👋 Field Work Controls (<span id="staffNameLabel"></span>)</div>
       <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye aur GPS location bhejane ke liye niche button dabayein.</p>
       <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
 
-      <!-- ABHA DATA PORTAL BOX -->
       <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
         <div class="card-title">🔱 ABHA Customer Entry Portal</div>
         <form id="customerForm" onsubmit="handleCustomerSubmit(event)">
@@ -123,10 +133,10 @@
           </div>
           <button type="submit" class="btn btn-gold">📥 Save ABHA Entry</button>
         </form>
+        <div id="customerMessage" class="message"></div>
       </div>
     </div>
 
-    <!-- ADMIN PANEL DASHBOARD -->
     <div id="adminPanel" style="display: none;">
       <div class="stats-grid">
         <div class="stat-box">
@@ -183,10 +193,346 @@
         </div>
       </div>
     </div>
-
   </div>
 
-  <script src="https://unpkg.com"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     let myEmpId = null;
     let locationIntervalId = null;
+    let adminStateIntervalId = null;
+    let adminMap = null;
+    let markerLayer = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function showMessage(id, text, ok = false) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'message ' + (ok ? 'ok' : 'error');
+    }
+
+    function switchAuthTab(tab) {
+      const login = tab === 'login';
+      $('loginForm').style.display = login ? 'block' : 'none';
+      $('signupForm').style.display = login ? 'none' : 'block';
+      $('loginTab').classList.toggle('active', login);
+      $('signupTab').classList.toggle('active', !login);
+      $('authMessage').className = 'message';
+      $('authMessage').textContent = '';
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch { throw new Error('Server response invalid (' + response.status + ')'); }
+      if (!response.ok) throw new Error(data.message || 'Server error');
+      return data;
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const role = $('loginRole').value;
+      const id = $('loginId').value.trim();
+      const password = $('loginPassword').value;
+
+      try {
+        const data = await api('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({ role, id, password })
+        });
+
+        if (!data.ok) {
+          showMessage('authMessage', data.message || 'Invalid ID or Password.');
+          return;
+        }
+
+        $('authSection').style.display = 'none';
+        $('userStatus').style.display = 'block';
+
+        if (data.role === 'owner') {
+          $('userStatus').textContent = '👑 Admin';
+          $('adminPanel').style.display = 'block';
+          initAdminMap();
+          renderAdminState(data.state);
+          startAdminRefresh();
+        } else {
+          myEmpId = data.employee.id;
+          $('userStatus').textContent = '🟢 ' + data.employee.id;
+          $('staffWorkspace').style.display = 'block';
+          $('staffNameLabel').textContent = data.employee.name;
+          updateWorkButton(data.employee.status);
+        }
+      } catch (err) {
+        showMessage('authMessage', 'Login error: ' + err.message);
+      }
+    }
+
+    async function handleSignup(event) {
+      event.preventDefault();
+      const name = $('signupName').value.trim();
+      const phone = $('signupMobile').value.trim();
+      const area = $('signupArea').value.trim();
+
+      try {
+        const data = await api('/api/signup', {
+          method: 'POST',
+          body: JSON.stringify({ name, phone, area })
+        });
+
+        if (!data.ok) {
+          showMessage('authMessage', data.message || 'Registration failed.');
+          return;
+        }
+
+        showMessage('authMessage', 'Registration successful! Employee ID: ' + data.employee.id + ' | Password: ' + data.password, true);
+        $('signupForm').reset();
+        $('loginRole').value = 'employee';
+        $('loginId').value = data.employee.id;
+        $('loginPassword').value = data.password;
+        switchAuthTab('login');
+        showMessage('authMessage', 'Registration successful! ID: ' + data.employee.id + ' | Password: ' + data.password, true);
+      } catch (err) {
+        showMessage('authMessage', 'Registration error: ' + err.message);
+      }
+    }
+
+    async function toggleFieldWork() {
+      if (!myEmpId) return;
+      const btn = $('workBtn');
+      const starting = !btn.dataset.working || btn.dataset.working !== 'true';
+      try {
+        if (starting) {
+          if (!navigator.geolocation) {
+            showMessage('authMessage', 'Is device/browser me GPS available nahi hai.');
+            return;
+          }
+
+          const position = await getCurrentPosition();
+          await syncLocation(position);
+          await setWorkStatus('Online');
+          btn.dataset.working = 'true';
+          updateWorkButton('Online');
+          startLocationTracking();
+        } else {
+          stopLocationTracking();
+          await setWorkStatus('Offline');
+          btn.dataset.working = 'false';
+          updateWorkButton('Offline');
+        }
+      } catch (err) {
+        showMessage('authMessage', 'GPS/Work error: ' + err.message);
+      }
+    }
+
+    function updateWorkButton(status) {
+      const online = status === 'Online';
+      const btn = $('workBtn');
+      btn.dataset.working = online ? 'true' : 'false';
+      btn.textContent = online ? '⏹ Stop Field Work' : '▶ Start Field Work';
+      btn.className = 'btn ' + (online ? 'btn-danger' : 'btn-success');
+    }
+
+    function getCurrentPosition() {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 5000
+        });
+      });
+    }
+
+    async function setWorkStatus(status) {
+      const data = await api('/api/work-status', {
+        method: 'POST',
+        body: JSON.stringify({ id: myEmpId, status })
+      });
+      if (!data.ok) throw new Error('Employee record nahi mila.');
+    }
+
+    async function syncLocation(position) {
+      const coords = position.coords;
+      const data = await api('/api/location-sync', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: myEmpId,
+          lat: coords.latitude,
+          lng: coords.longitude,
+          accuracy: coords.accuracy
+        })
+      });
+      if (!data.ok) throw new Error('Location save nahi hui.');
+    }
+
+    function startLocationTracking() {
+      stopLocationTracking();
+      locationIntervalId = setInterval(async () => {
+        if (!myEmpId) return;
+        try {
+          const position = await getCurrentPosition();
+          await syncLocation(position);
+        } catch (err) {
+          console.warn('Location sync:', err.message);
+        }
+      }, 15000);
+    }
+
+    function stopLocationTracking() {
+      if (locationIntervalId) {
+        clearInterval(locationIntervalId);
+        locationIntervalId = null;
+      }
+    }
+
+    function initAdminMap() {
+      if (adminMap) {
+        setTimeout(() => adminMap.invalidateSize(), 200);
+        return;
+      }
+      adminMap = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(adminMap);
+      markerLayer = L.layerGroup().addTo(adminMap);
+      setTimeout(() => adminMap.invalidateSize(), 300);
+    }
+
+    function renderAdminState(state) {
+      const employees = Array.isArray(state.employees) ? state.employees : [];
+      const customers = Array.isArray(state.customers) ? state.customers : [];
+
+      $('totalStaffCount').textContent = employees.length;
+      $('activeStaffCount').textContent = employees.filter(e => e.status === 'Online').length;
+
+      $('staffTableBody').innerHTML = employees.map(e => `
+        <tr>
+          <td>${esc(e.name)}</td>
+          <td>${esc(e.id)}</td>
+          <td>${esc(e.phone)}</td>
+          <td>${esc(e.area || e.location || '—')}</td>
+          <td>${Number(e.cards || 0)}</td>
+          <td>${e.status === 'Online'
+            ? '<span class="badge-online">ONLINE</span>'
+            : '<span class="badge-offline">OFFLINE</span>'}</td>
+          <td>${esc(e.last || '—')}</td>
+        </tr>
+      `).join('');
+
+      $('customerTableBody').innerHTML = customers.length ? customers.map(c => `
+        <tr>
+          <td>${esc(c.name)}</td>
+          <td>${esc(c.mobile)}</td>
+          <td>${esc(c.abha)}</td>
+          <td>${esc(c.employeeName || c.employeeId || '—')}</td>
+          <td>${esc(c.date || '—')}</td>
+          <td><button class="btn btn-danger" style="width:auto;padding:8px 12px;" onclick="deleteCustomer('${escAttr(c.id)}')">Delete</button></td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No customer entries yet.</td></tr>';
+
+      updateMapMarkers(employees);
+    }
+
+    function updateMapMarkers(employees) {
+      if (!adminMap || !markerLayer) return;
+      markerLayer.clearLayers();
+
+      const points = [];
+      employees.forEach(e => {
+        if (Number.isFinite(Number(e.lat)) && Number.isFinite(Number(e.lng))) {
+          const lat = Number(e.lat), lng = Number(e.lng);
+          points.push([lat, lng]);
+          const marker = L.marker([lat, lng]).addTo(markerLayer);
+          marker.bindPopup(
+            '<b>' + esc(e.name) + '</b><br>' +
+            'ID: ' + esc(e.id) + '<br>' +
+            'Status: ' + esc(e.status || 'Offline') + '<br>' +
+            'Last: ' + esc(e.last || '—') + '<br>' +
+            'Location: ' + esc(e.location || '—')
+          );
+        }
+      });
+
+      if (points.length === 1) adminMap.setView(points[0], 16);
+      else if (points.length > 1) adminMap.fitBounds(points, { padding: [30, 30] });
+    }
+
+    async function refreshAdminState() {
+      try {
+        const state = await api('/api/state', { cache: 'no-store' });
+        renderAdminState(state);
+      } catch (err) {
+        console.warn('Admin refresh:', err.message);
+      }
+    }
+
+    function startAdminRefresh() {
+      if (adminStateIntervalId) clearInterval(adminStateIntervalId);
+      adminStateIntervalId = setInterval(refreshAdminState, 5000);
+    }
+
+    async function handleCustomerSubmit(event) {
+      event.preventDefault();
+      if (!myEmpId) return showMessage('customerMessage', 'Pehle employee login kijiye.');
+
+      try {
+        const data = await api('/api/add-customer', {
+          method: 'POST',
+          body: JSON.stringify({
+            empId: myEmpId,
+            name: $('cusName').value.trim(),
+            mobile: $('cusMobile').value.trim(),
+            abha: $('cusAbha').value.trim()
+          })
+        });
+
+        if (!data.ok) {
+          showMessage('customerMessage', data.message || 'Save failed.');
+          return;
+        }
+
+        $('customerForm').reset();
+        showMessage('customerMessage', 'ABHA entry successfully saved.', true);
+      } catch (err) {
+        showMessage('customerMessage', 'Save error: ' + err.message);
+      }
+    }
+
+    async function deleteCustomer(id) {
+      if (!confirm('Is customer entry ko delete karna hai?')) return;
+      try {
+        const data = await api('/api/delete-customer', {
+          method: 'POST',
+          body: JSON.stringify({ id })
+        });
+        if (!data.ok) throw new Error(data.message || 'Delete failed.');
+        await refreshAdminState();
+      } catch (err) {
+        alert('Delete error: ' + err.message);
+      }
+    }
+
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[ch]));
+    }
+
+    function escAttr(value) {
+      return String(value ?? '').replace(/['\\]/g, ch => '\\' + ch);
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW:', err));
+      });
+    }
+  </script>
+</body>
+</html>
