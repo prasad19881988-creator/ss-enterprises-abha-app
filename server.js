@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const crypto = require('crypto');
-const mongoose = require('mongoose'); // Permanent Database Link
+const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -16,14 +16,13 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // 1. MONGODB PERMANENT DATABASE CONNECTION
-// Render ke Environment Variables me MONGODB_URI dalein ya direct free link use karein
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://ss_user:SS_Abha_2026@cluster0.rtw9b.mongodb.net/ss_enterprises?retryWrites=true&w=majority";
 
 mongoose.connect(mongoURI)
   .then(() => console.log('✅ Permanent Cloud Database Connected Successfully!'))
   .catch(err => console.error('❌ Database Connection Error:', err.message));
 
-// 2. DATABASE MODELS STRUCTURE (Bina Features Chhede)
+// 2. DATABASE MODELS STRUCTURE
 const AppStateSchema = new mongoose.Schema({
   key: { type: String, default: "main_state" },
   employees: { type: Array, default: [
@@ -47,7 +46,6 @@ const AppStateSchema = new mongoose.Schema({
 
 const AppState = mongoose.model('AppState', AppStateSchema);
 
-// Safe Live Cloud Loader
 async function getLiveState() {
   let state = await AppState.findOne({ key: "main_state" });
   if (!state) {
@@ -89,14 +87,12 @@ io.on('connection', socket => {
     p = p || {};
     const dbState = await getLiveState();
     
-    // Owner Login (Aapka Asli Username & Password)
     if (p.role === 'owner' && p.id === 'SS' && p.password === 'ADMIN@12345') {
       const t = token();
       sessions.set(t, { role: 'owner', id: 'SS', socket: socket.id });
       return safeCb(cb, { ok: true, token: t, state: { employees: dbState.employees, customers: dbState.customers } });
     }
     
-    // Employee Login
     if (p.role === 'employee' && p.password === 'SS@12345') {
       const e = dbState.employees.find(x => x.id === p.id);
       if (!e) return safeCb(cb, { ok: false, message: 'Employee ID not found.' });
@@ -109,7 +105,7 @@ io.on('connection', socket => {
     safeCb(cb, { ok: false, message: 'Invalid ID or Password.' });
   });
 
-  // Employee Signup Handler (Naya Staff Yahan Hamesha Ke Liye Save Hoga)
+  // Employee Signup Handler
   socket.on('signup', async (p, cb) => {
     p = p || {};
     const name = clean(p.name);
@@ -122,7 +118,6 @@ io.on('connection', socket => {
 
     const dbState = await getLiveState();
 
-    // Auto-increment Employee ID
     let maxNum = 101;
     for (const e of dbState.employees) {
       const m = String(e.id || '').match(/^EMP(\d+)$/);
@@ -181,7 +176,7 @@ io.on('connection', socket => {
     safeCb(cb, { ok: false, message: 'Employee not found.' });
   });
 
-  // Realtime GPS Location Update (Live Tracking Map Connection)
+  // Realtime GPS Location Update
   socket.on('locationUpdate', async p => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') return;
@@ -267,7 +262,7 @@ io.on('connection', socket => {
     safeCb(cb, { ok: true, customer: c, employee: e });
   });
 
-  // Delete Customer Record (Owner Only)
+  // Delete Customer Record
   socket.on('deleteCustomer', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'owner') {
@@ -320,10 +315,18 @@ io.on('connection', socket => {
   });
 });
 
-// Health Check Endpoint (For UptimeRobot)
+// Health Check Endpoint
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'SS ENTERPRISES ABHA REALTIME PORTAL', status: 'Running' });
 });
 
 // Fallback Route to Serve Frontend index.html
 app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Port Start Listener
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 SS Enterprises server is actively running on port ${PORT}`);
+});
