@@ -1,8 +1,8 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
+const mongoose = require('mongoose'); // Permanent Database Link
 const { Server } = require('socket.io');
 
 const app = express();
@@ -15,11 +15,18 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Database File Path
-const DB = path.join(__dirname, 'data.json');
+// 1. MONGODB PERMANENT DATABASE CONNECTION
+// Render ke Environment Variables me MONGODB_URI dalein ya direct free link use karein
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://ss_user:SS_Abha_2026@cluster0.rtw9b.mongodb.net/ss_enterprises?retryWrites=true&w=majority";
 
-const defaultDB = {
-  employees: [
+mongoose.connect(mongoURI)
+  .then(() => console.log('✅ Permanent Cloud Database Connected Successfully!'))
+  .catch(err => console.error('❌ Database Connection Error:', err.message));
+
+// 2. DATABASE MODELS STRUCTURE (Bina Features Chhede)
+const AppStateSchema = new mongoose.Schema({
+  key: { type: String, default: "main_state" },
+  employees: { type: Array, default: [
     {
       id: 'EMP101',
       name: 'Dev Krishna Rai',
@@ -34,31 +41,26 @@ const defaultDB = {
       area: '',
       details: ''
     }
-  ],
-  customers: []
-};
+  ]},
+  customers: { type: Array, default: [] }
+});
 
-// Safe DB Loading
-let db = defaultDB;
-try {
-  if (fs.existsSync(DB)) {
-    const raw = fs.readFileSync(DB, 'utf8');
-    db = JSON.parse(raw);
+const AppState = mongoose.model('AppState', AppStateSchema);
+
+// Safe Live Cloud Loader
+async function getLiveState() {
+  let state = await AppState.findOne({ key: "main_state" });
+  if (!state) {
+    state = new AppState();
+    await state.save();
   }
-} catch (err) {
-  console.error('Error reading data.json, falling back to default:', err.message);
-  db = defaultDB;
+  return state;
 }
 
-db.employees = db.employees || [];
-db.customers = db.customers || [];
-
-function save() {
-  try {
-    fs.writeFileSync(DB, JSON.stringify(db, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error saving data.json:', err.message);
-  }
+async function saveLiveState(state) {
+  state.markModified('employees');
+  state.markModified('customers');
+  await state.save();
 }
 
 function token() {
@@ -71,34 +73,8 @@ function safeCb(cb, payload) {
   if (typeof cb === 'function') cb(payload);
 }
 
-function employeeById(id) {
-  return db.employees.find(e => e.id === id);
-}
-
-function publicState() {
-  return {
-    employees: db.employees,
-    customers: db.customers
-  };
-}
-
-function broadcast() {
-  io.emit('state', publicState());
-}
-
 function getISTDate() {
   return new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-}
-
-function nextEmployeeId() {
-  let maxNum = 101;
-  for (const e of db.employees) {
-    const m = String(e.id || '').match(/^EMP(\d+)$/);
-    if (m) {
-      maxNum = Math.max(maxNum, Number(m[1]));
-    }
-  }
-  return 'EMP' + String(maxNum + 1);
 }
 
 function clean(s) {
@@ -109,19 +85,20 @@ function clean(s) {
 io.on('connection', socket => {
 
   // Login Handler
-  socket.on('login', (p, cb) => {
+  socket.on('login', async (p, cb) => {
     p = p || {};
+    const dbState = await getLiveState();
     
-    // Owner Login
+    // Owner Login (Aapka Asli Username & Password)
     if (p.role === 'owner' && p.id === 'SS' && p.password === 'ADMIN@12345') {
       const t = token();
       sessions.set(t, { role: 'owner', id: 'SS', socket: socket.id });
-      return safeCb(cb, { ok: true, token: t, state: publicState() });
+      return safeCb(cb, { ok: true, token: t, state: { employees: dbState.employees, customers: dbState.customers } });
     }
     
     // Employee Login
     if (p.role === 'employee' && p.password === 'SS@12345') {
-      const e = employeeById(p.id);
+      const e = dbState.employees.find(x => x.id === p.id);
       if (!e) return safeCb(cb, { ok: false, message: 'Employee ID not found.' });
       
       const t = token();
@@ -132,8 +109,8 @@ io.on('connection', socket => {
     safeCb(cb, { ok: false, message: 'Invalid ID or Password.' });
   });
 
-  // Employee Signup Handler
-  socket.on('signup', (p, cb) => {
+  // Employee Signup Handler (Naya Staff Yahan Hamesha Ke Liye Save Hoga)
+  socket.on('signup', async (p, cb) => {
     p = p || {};
     const name = clean(p.name);
     const phone = clean(p.phone);
@@ -143,8 +120,17 @@ io.on('connection', socket => {
       return safeCb(cb, { ok: false, message: 'Name is required (at least 2 letters).' });
     }
 
-    const id = nextEmployeeId();
-    const e = {
+    const dbState = await getLiveState();
+
+    // Auto-increment Employee ID
+    let maxNum = 101;
+    for (const e of dbState.employees) {
+      const m = String(e.id || '').match(/^EMP(\d+)$/);
+      if (m) maxNum = Math.max(maxNum, Number(m[1]));
+    }
+    const id = 'EMP' + String(maxNum + 1);
+
+    const newEmployee = {
       id,
       name,
       phone,
@@ -159,46 +145,49 @@ io.on('connection', socket => {
       details: ''
     };
 
-    db.employees.push(e);
-    save();
-    broadcast();
+    dbState.employees.push(newEmployee);
+    await saveLiveState(dbState);
+    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
 
-    safeCb(cb, { ok: true, employee: e, password: 'SS@12345' });
+    safeCb(cb, { ok: true, employee: newEmployee, password: 'SS@12345' });
   });
 
   // Fetch Current State
-  socket.on('getState', (p, cb) => {
+  socket.on('getState', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'owner') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
     }
-    safeCb(cb, { ok: true, state: publicState() });
+    const dbState = await getLiveState();
+    safeCb(cb, { ok: true, state: { employees: dbState.employees, customers: dbState.customers } });
   });
 
   // Start Work (Online)
-  socket.on('startWork', (p, cb) => {
+  socket.on('startWork', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
     }
 
-    const e = employeeById(s.id);
+    const dbState = await getLiveState();
+    const e = dbState.employees.find(x => x.id === s.id);
     if (e) {
       e.status = 'Online';
       e.last = getISTDate();
-      save();
-      broadcast();
+      await saveLiveState(dbState);
+      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
       return safeCb(cb, { ok: true, employee: e });
     }
     safeCb(cb, { ok: false, message: 'Employee not found.' });
   });
 
-  // Realtime GPS Location Update
-  socket.on('locationUpdate', p => {
+  // Realtime GPS Location Update (Live Tracking Map Connection)
+  socket.on('locationUpdate', async p => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') return;
 
-    const e = employeeById(s.id);
+    const dbState = await getLiveState();
+    const e = dbState.employees.find(x => x.id === s.id);
     if (e) {
       e.lat = Number(p.lat);
       e.lng = Number(p.lng);
@@ -206,33 +195,34 @@ io.on('connection', socket => {
       e.location = `${e.lat.toFixed(5)}, ${e.lng.toFixed(5)} (±${Math.round(e.accuracy)}m)`;
       e.status = 'Online';
       e.last = getISTDate();
-      save();
-      broadcast();
+      await saveLiveState(dbState);
+      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
     }
   });
 
   // Save Report
-  socket.on('saveReport', (p, cb) => {
+  socket.on('saveReport', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
     }
 
-    const e = employeeById(s.id);
+    const dbState = await getLiveState();
+    const e = dbState.employees.find(x => x.id === s.id);
     if (e) {
       e.cards = Number(p.cards || 0);
       e.area = clean(p.area);
       e.details = clean(p.details);
       e.last = getISTDate();
-      save();
-      broadcast();
+      await saveLiveState(dbState);
+      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
       return safeCb(cb, { ok: true, employee: e });
     }
     safeCb(cb, { ok: false, message: 'Employee not found.' });
   });
 
   // Add Customer / ABHA Work Entry
-  socket.on('addCustomer', (p, cb) => {
+  socket.on('addCustomer', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
@@ -249,7 +239,9 @@ io.on('connection', socket => {
       return safeCb(cb, { ok: false, message: 'Customer name is required.' });
     }
 
-    const e = employeeById(s.id);
+    const dbState = await getLiveState();
+    const e = dbState.employees.find(x => x.id === s.id);
+    
     const c = {
       id: 'CUS-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase(),
       employeeId: e ? e.id : s.id,
@@ -263,49 +255,51 @@ io.on('connection', socket => {
       date: getISTDate()
     };
 
-    db.customers.unshift(c);
+    dbState.customers.unshift(c);
     
     if (e) {
-      e.cards = db.customers.filter(x => x.employeeId === e.id && x.status === 'Completed').length;
+      e.cards = dbState.customers.filter(x => x.employeeId === e.id && x.status === 'Completed').length;
       e.last = c.date;
     }
 
-    save();
-    broadcast();
+    await saveLiveState(dbState);
+    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
     safeCb(cb, { ok: true, customer: c, employee: e });
   });
 
   // Delete Customer Record (Owner Only)
-  socket.on('deleteCustomer', (p, cb) => {
+  socket.on('deleteCustomer', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'owner') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
     }
 
-    db.customers = db.customers.filter(c => c.id !== p.id);
+    const dbState = await getLiveState();
+    dbState.customers = dbState.customers.filter(c => c.id !== p.id);
 
-    for (const e of db.employees) {
-      e.cards = db.customers.filter(c => c.employeeId === e.id && c.status === 'Completed').length;
+    for (const e of dbState.employees) {
+      e.cards = dbState.customers.filter(c => c.employeeId === e.id && c.status === 'Completed').length;
     }
 
-    save();
-    broadcast();
+    await saveLiveState(dbState);
+    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
     safeCb(cb, { ok: true });
   });
 
   // Close Work (Offline)
-  socket.on('closeWork', (p, cb) => {
+  socket.on('closeWork', async (p, cb) => {
     const s = sessions.get(p?.token);
     if (!s || s.role !== 'employee') {
       return safeCb(cb, { ok: false, message: 'Unauthorized' });
     }
 
-    const e = employeeById(s.id);
+    const dbState = await getLiveState();
+    const e = dbState.employees.find(x => x.id === s.id);
     if (e) {
       e.status = 'Offline';
       e.last = getISTDate();
-      save();
-      broadcast();
+      await saveLiveState(dbState);
+      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
       return safeCb(cb, { ok: true, employee: e });
     }
     safeCb(cb, { ok: false, message: 'Employee not found.' });
@@ -326,18 +320,10 @@ io.on('connection', socket => {
   });
 });
 
-// Health Check Endpoint (For UptimeRobot / Render Ping)
+// Health Check Endpoint (For UptimeRobot)
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'SS ENTERPRISES ABHA REALTIME PORTAL', status: 'Running' });
 });
 
 // Fallback Route to Serve Frontend index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Start Server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log('🚀 SS ENTERPRISES Realtime Portal running on port: ' + PORT);
-});
