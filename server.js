@@ -1,332 +1,190 @@
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const crypto = require('crypto');
-const mongoose = require('mongoose');
-const { Server } = require('socket.io');
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔱 SS ENTERPRISES — Royal Work Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: #080a10; color: #f3f4f6; min-height: 100vh; padding-bottom: 80px; }
+    header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 2px solid #d97706; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 25px rgba(217, 119, 6, 0.15); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-weight: 900; font-size: 1.25rem; background: linear-gradient(135deg, #fbbf24, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.8px; }
+    .brand-subtitle { font-size: 0.68rem; color: #9ca3af; font-weight: 500; letter-spacing: 0.5px; }
+    .user-badge { font-size: 0.8rem; font-weight: 700; background: #1e1b4b; padding: 6px 14px; border-radius: 20px; color: #fbbf24; border: 1px solid #d97706; }
+    .container { max-width: 1050px; margin: 20px auto; padding: 0 15px; }
+    .card { background: linear-gradient(145deg, #0f172a, #1e1b4b); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 20px; padding: 22px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #f59e0b, #d97706, #7c2d12); }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: #fbbf24; margin-bottom: 18px; border-bottom: 1px solid rgba(217, 119, 6, 0.2); padding-bottom: 10px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 22px; }
+    .stat-box { background: rgba(15, 23, 42, 0.8); border: 1px solid #d97706; border-radius: 16px; padding: 18px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 900; color: #fbbf24; }
+    .stat-label { font-size: 0.78rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin-bottom: 6px; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid #374151; border-radius: 12px; padding: 13px 15px; color: #ffffff; outline: none; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-gold { background: linear-gradient(135deg, #f59e0b, #b45309); color: #000000; font-weight: 900; }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
+    .btn-success { background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffffff; }
+    #map { height: 380px; width: 100%; border-radius: 14px; border: 1px solid #d97706; margin-top: 10px; background: #0f172a; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th { background: #1e1b4b; color: #fbbf24; padding: 12px; border-bottom: 2px solid #d97706; }
+    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .badge-online { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 12px; border-radius: 20px; border: 1px solid #10b981; font-size: 0.75rem; }
+    .badge-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 4px 12px; border-radius: 20px; border: 1px solid #64748b; font-size: 0.75rem; }
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; }
+    .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: #9ca3af; border-radius: 10px; cursor: pointer; font-weight: 800; }
+    .tab-btn.active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; }
+  </style>
+</head>
+<body>
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+  <header>
+    <div class="brand">
+      <span class="trishul-logo"><img src="logo.png" alt="🔱" style="height:30px; vertical-align:middle;"></span>
+      <div>
+        <div class="brand-title">SS ENTERPRISES</div>
+        <div class="brand-subtitle">AAPKI SEVA ME HAMARI KHUSHI</div>
+      </div>
+    </div>
+    <div id="userStatus" class="user-badge" style="display: none;">Offline</div>
+  </header>
 
-// Middleware
-app.use(express.json());
-app.use(express.static(__dirname));
+  <div class="container">
 
-// 1. MONGODB PERMANENT DATABASE CONNECTION
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://ss_user:SS_Abha_2026@cluster0.rtw9b.mongodb.net/ss_enterprises?retryWrites=true&w=majority";
+    <!-- AUTH SECTION -->
+    <div id="authSection" class="card" style="max-width: 480px; margin: 30px auto;">
+      <div class="auth-tabs">
+        <button id="loginTab" class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
+        <button id="signupTab" class="tab-btn" onclick="switchAuthTab('signup')">Staff Registration</button>
+      </div>
 
-mongoose.connect(mongoURI)
-  .then(() => console.log('✅ Permanent Cloud Database Connected Successfully!'))
-  .catch(err => console.error('❌ Database Connection Error:', err.message));
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Select Role</label>
+          <select id="loginRole">
+            <option value="employee">Field Staff / Employee</option>
+            <option value="owner">Owner / Admin Control</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Employee ID / Admin Username</label>
+          <input type="text" id="loginId" placeholder="e.g., EMP101 or SS" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-gold">🚀 Login To Dashboard</button>
+      </form>
 
-// 2. DATABASE MODELS STRUCTURE
-const AppStateSchema = new mongoose.Schema({
-  key: { type: String, default: "main_state" },
-  employees: { type: Array, default: [
-    {
-      id: 'EMP101',
-      name: 'Dev Krishna Rai',
-      phone: '',
-      status: 'Offline',
-      last: '—',
-      cards: 0,
-      location: 'Not sharing',
-      lat: null,
-      lng: null,
-      accuracy: null,
-      area: '',
-      details: ''
-    }
-  ]},
-  customers: { type: Array, default: [] }
-});
+      <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signupName" placeholder="Enter Full Name" required>
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="text" id="signupMobile" placeholder="10 Digits Mobile Number" required>
+        </div>
+        <div class="form-group">
+          <label>Assigned Area</label>
+          <input type="text" id="signupArea" placeholder="e.g., Darbhanga" required>
+        </div>
+        <button type="submit" class="btn btn-primary">📝 Register Staff Account</button>
+      </form>
+    </div>
 
-const AppState = mongoose.model('AppState', AppStateSchema);
+    <!-- STAFF TRACKING WORKSPACE -->
+    <div id="staffWorkspace" class="card" style="display: none;">
+      <div class="card-title">👋 Field Work Controls (<span id="staffNameLabel"></span>)</div>
+      <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye niche diye gaye button par click karein.</p>
+      <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
+    </div>
 
-async function getLiveState() {
-  let state = await AppState.findOne({ key: "main_state" });
-  if (!state) {
-    state = new AppState();
-    await state.save();
-  }
-  return state;
-}
+    <!-- ADMIN PANEL DASHBOARD -->
+    <div id="adminPanel" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Total Field Staff</div>
+          <div id="totalStaffCount" class="stat-number">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Active On Duty</div>
+          <div id="activeStaffCount" class="stat-number">0</div>
+        </div>
+      </div>
 
-async function saveLiveState(state) {
-  state.markModified('employees');
-  state.markModified('customers');
-  await state.save();
-}
+      <div class="card">
+        <div class="card-title">🗺 Real-Time Employee Field Live Tracking Map</div>
+        <div id="map"></div>
+      </div>
 
-function token() {
-  return crypto.randomBytes(24).toString('hex');
-}
+      <div class="card">
+        <div class="card-title">👥 Active Field Staff Control</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Staff Name</th>
+                <th>Employee ID</th>
+                <th>Mobile</th>
+                <th>Area Location</th>
+                <th>GPS Status</th>
+                <th>Last Sync</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
-const sessions = new Map();
+  </div>
 
-function safeCb(cb, payload) {
-  if (typeof cb === 'function') cb(payload);
-}
+  <script src="https://unpkg.com"></script>
+  <script>
+    let myEmpId = null;
+    let locationIntervalId = null;
+    let trackingMap = null;
+    let mapMarkers = {};
 
-function getISTDate() {
-  return new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-}
-
-function clean(s) {
-  return String(s ?? '').trim().slice(0, 500);
-}
-
-// Socket.io Connection Events
-io.on('connection', socket => {
-
-  // Login Handler
-  socket.on('login', async (p, cb) => {
-    p = p || {};
-    const dbState = await getLiveState();
-    
-    if (p.role === 'owner' && p.id === 'SS' && p.password === 'ADMIN@12345') {
-      const t = token();
-      sessions.set(t, { role: 'owner', id: 'SS', socket: socket.id });
-      return safeCb(cb, { ok: true, token: t, state: { employees: dbState.employees, customers: dbState.customers } });
-    }
-    
-    if (p.role === 'employee' && p.password === 'SS@12345') {
-      const e = dbState.employees.find(x => x.id === p.id);
-      if (!e) return safeCb(cb, { ok: false, message: 'Employee ID not found.' });
-      
-      const t = token();
-      sessions.set(t, { role: 'employee', id: e.id, socket: socket.id });
-      return safeCb(cb, { ok: true, token: t, employee: e });
-    }
-
-    safeCb(cb, { ok: false, message: 'Invalid ID or Password.' });
-  });
-
-  // Employee Signup Handler
-  socket.on('signup', async (p, cb) => {
-    p = p || {};
-    const name = clean(p.name);
-    const phone = clean(p.phone);
-    const area = clean(p.area);
-
-    if (name.length < 2) {
-      return safeCb(cb, { ok: false, message: 'Name is required (at least 2 letters).' });
-    }
-
-    const dbState = await getLiveState();
-
-    let maxNum = 101;
-    for (const e of dbState.employees) {
-      const m = String(e.id || '').match(/^EMP(\d+)$/);
-      if (m) maxNum = Math.max(maxNum, Number(m[1]));
-    }
-    const id = 'EMP' + String(maxNum + 1);
-
-    const newEmployee = {
-      id,
-      name,
-      phone,
-      status: 'Offline',
-      last: '—',
-      cards: 0,
-      location: 'Not sharing',
-      lat: null,
-      lng: null,
-      accuracy: null,
-      area,
-      details: ''
-    };
-
-    dbState.employees.push(newEmployee);
-    await saveLiveState(dbState);
-    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-
-    safeCb(cb, { ok: true, employee: newEmployee, password: 'SS@12345' });
-  });
-
-  // Fetch Current State
-  socket.on('getState', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'owner') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-    const dbState = await getLiveState();
-    safeCb(cb, { ok: true, state: { employees: dbState.employees, customers: dbState.customers } });
-  });
-
-  // Start Work (Online)
-  socket.on('startWork', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'employee') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-
-    const dbState = await getLiveState();
-    const e = dbState.employees.find(x => x.id === s.id);
-    if (e) {
-      e.status = 'Online';
-      e.last = getISTDate();
-      await saveLiveState(dbState);
-      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-      return safeCb(cb, { ok: true, employee: e });
-    }
-    safeCb(cb, { ok: false, message: 'Employee not found.' });
-  });
-
-  // Realtime GPS Location Update
-  socket.on('locationUpdate', async p => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'employee') return;
-
-    const dbState = await getLiveState();
-    const e = dbState.employees.find(x => x.id === s.id);
-    if (e) {
-      e.lat = Number(p.lat);
-      e.lng = Number(p.lng);
-      e.accuracy = Number(p.accuracy || 0);
-      e.location = `${e.lat.toFixed(5)}, ${e.lng.toFixed(5)} (±${Math.round(e.accuracy)}m)`;
-      e.status = 'Online';
-      e.last = getISTDate();
-      await saveLiveState(dbState);
-      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-    }
-  });
-
-  // Save Report
-  socket.on('saveReport', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'employee') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-
-    const dbState = await getLiveState();
-    const e = dbState.employees.find(x => x.id === s.id);
-    if (e) {
-      e.cards = Number(p.cards || 0);
-      e.area = clean(p.area);
-      e.details = clean(p.details);
-      e.last = getISTDate();
-      await saveLiveState(dbState);
-      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-      return safeCb(cb, { ok: true, employee: e });
-    }
-    safeCb(cb, { ok: false, message: 'Employee not found.' });
-  });
-
-  // Add Customer / ABHA Work Entry
-  socket.on('addCustomer', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'employee') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-
-    const name = clean(p.name);
-    const mobile = clean(p.mobile);
-    const abha = clean(p.abha);
-    const area = clean(p.area);
-    const status = clean(p.status) || 'Completed';
-    const remarks = clean(p.remarks);
-
-    if (!name) {
-      return safeCb(cb, { ok: false, message: 'Customer name is required.' });
-    }
-
-    const dbState = await getLiveState();
-    const e = dbState.employees.find(x => x.id === s.id);
-    
-    const c = {
-      id: 'CUS-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase(),
-      employeeId: e ? e.id : s.id,
-      employeeName: e ? e.name : 'Employee',
-      name,
-      mobile,
-      abha,
-      area,
-      status,
-      remarks,
-      date: getISTDate()
-    };
-
-    dbState.customers.unshift(c);
-    
-    if (e) {
-      e.cards = dbState.customers.filter(x => x.employeeId === e.id && x.status === 'Completed').length;
-      e.last = c.date;
-    }
-
-    await saveLiveState(dbState);
-    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-    safeCb(cb, { ok: true, customer: c, employee: e });
-  });
-
-  // Delete Customer Record
-  socket.on('deleteCustomer', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'owner') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-
-    const dbState = await getLiveState();
-    dbState.customers = dbState.customers.filter(c => c.id !== p.id);
-
-    for (const e of dbState.employees) {
-      e.cards = dbState.customers.filter(c => c.employeeId === e.id && c.status === 'Completed').length;
-    }
-
-    await saveLiveState(dbState);
-    io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-    safeCb(cb, { ok: true });
-  });
-
-  // Close Work (Offline)
-  socket.on('closeWork', async (p, cb) => {
-    const s = sessions.get(p?.token);
-    if (!s || s.role !== 'employee') {
-      return safeCb(cb, { ok: false, message: 'Unauthorized' });
-    }
-
-    const dbState = await getLiveState();
-    const e = dbState.employees.find(x => x.id === s.id);
-    if (e) {
-      e.status = 'Offline';
-      e.last = getISTDate();
-      await saveLiveState(dbState);
-      io.emit('state', { employees: dbState.employees, customers: dbState.customers });
-      return safeCb(cb, { ok: true, employee: e });
-    }
-    safeCb(cb, { ok: false, message: 'Employee not found.' });
-  });
-
-  // Logout
-  socket.on('logout', p => {
-    sessions.delete(p?.token);
-  });
-
-  // Disconnect Cleanup
-  socket.on('disconnect', () => {
-    for (const [t, s] of sessions) {
-      if (s.socket === socket.id) {
-        sessions.delete(t);
+    function switchAuthTab(tab) {
+      if(tab === 'login') {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('loginTab').classList.add('active');
+        document.getElementById('signupTab').classList.remove('active');
+      } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'block';
+        document.getElementById('loginTab').classList.remove('active');
+        document.getElementById('signupTab').classList.add('active');
       }
     }
-  });
-});
 
-// Health Check Endpoint
-app.get('/health', (req, res) => {
-  res.json({ ok: true, service: 'SS ENTERPRISES ABHA REALTIME PORTAL', status: 'Running' });
-});
+    // RELIABLE SIGNUP SYSTEM
+    function handleSignup(event) {
+      event.preventDefault();
+      const payload = {
+        name: document.getElementById('signupName').value,
+        phone: document.getElementById('signupMobile').value,
+        area: document.getElementById('signupArea').value
+      };
 
-// Fallback Route to Serve Frontend index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Port Start Listener
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 SS Enterprises server is actively running on port ${PORT}`);
-});
+      fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.ok) {
+          alert(`🎉 Naya Staff Register Ho Gaya!\n\nID: ${data.employee.id}\nPassword: ${data.password}\n\nIse Note Kar Ke Staff Ko De Dein.`);
+          document.getElementById('signupForm').reset();
+          switchAuthTab('login');
+        } else {
