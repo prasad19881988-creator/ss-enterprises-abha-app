@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>🔱 SS ENTERPRISES — Royal Work Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: #080a10; color: #f3f4f6; min-height: 100vh; padding-bottom: 80px; }
+    header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 2px solid #d97706; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 25px rgba(217, 119, 6, 0.15); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-weight: 900; font-size: 1.25rem; background: linear-gradient(135deg, #fbbf24, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.8px; }
+    .brand-subtitle { font-size: 0.68rem; color: #9ca3af; font-weight: 500; letter-spacing: 0.5px; }
+    .user-badge { font-size: 0.8rem; font-weight: 700; background: #1e1b4b; padding: 6px 14px; border-radius: 20px; color: #fbbf24; border: 1px solid #d97706; }
+    .container { max-width: 1050px; margin: 20px auto; padding: 0 15px; }
+    .card { background: linear-gradient(145deg, #0f172a, #1e1b4b); border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 20px; padding: 22px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #f59e0b, #d97706, #7c2d12); }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: #fbbf24; margin-bottom: 18px; border-bottom: 1px solid rgba(217, 119, 6, 0.2); padding-bottom: 10px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 22px; }
+    .stat-box { background: rgba(15, 23, 42, 0.8); border: 1px solid #d97706; border-radius: 16px; padding: 18px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 900; color: #fbbf24; }
+    .stat-label { font-size: 0.78rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin-bottom: 6px; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid #374151; border-radius: 12px; padding: 13px 15px; color: #ffffff; outline: none; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-gold { background: linear-gradient(135deg, #f59e0b, #b45309); color: #000000; font-weight: 900; }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
+    .btn-success { background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffffff; }
+    #map { height: 380px; width: 100%; border-radius: 14px; border: 1px solid #d97706; margin-top: 10px; background: #0f172a; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th { background: #1e1b4b; color: #fbbf24; padding: 12px; border-bottom: 2px solid #d97706; }
+    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .badge-online { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 12px; border-radius: 20px; border: 1px solid #10b981; font-size: 0.75rem; }
+    .badge-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 4px 12px; border-radius: 20px; border: 1px solid #64748b; font-size: 0.75rem; }
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; background: #0f172a; padding: 6px; border-radius: 14px; }
+    .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: #9ca3af; border-radius: 10px; cursor: pointer; font-weight: 800; }
+    .tab-btn.active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000000; }
+    .message { margin-top: 14px; padding: 10px 12px; border-radius: 10px; display: none; font-weight: 700; font-size: 0.9rem; }
+    .message.ok { display: block; background: rgba(16,185,129,.15); border: 1px solid #10b981; color: #6ee7b7; }
+    .message.error { display: block; background: rgba(239,68,68,.15); border: 1px solid #ef4444; color: #fca5a5; }
+    .small-note { color:#9ca3af; font-size:.82rem; margin-top:10px; line-height:1.5; }
+    @media (max-width: 600px) {
+      header { padding: 12px 14px; }
+      .brand-title { font-size: 1.05rem; }
+      .brand-subtitle { font-size: .58rem; }
+      .container { padding: 0 10px; }
+      .card { padding: 17px; }
+      #map { height: 330px; }
+    }
+  
+    .offline-strip{display:none;margin:10px auto;max-width:1050px;padding:10px 15px;border-radius:12px;background:rgba(245,158,11,.12);border:1px solid #f59e0b;color:#fcd34d;font-weight:800}.offline-strip.show{display:block}
+    .mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.group-list{display:grid;gap:10px}.group-item{padding:13px;border:1px solid rgba(217,119,6,.3);border-radius:13px;background:#0f172a;cursor:pointer}.group-item.active{border-color:#f59e0b;box-shadow:0 0 0 1px #f59e0b inset}.group-name{font-weight:900;color:#fbbf24}.group-meta{font-size:.75rem;color:#94a3b8;margin-top:4px}.chat-box{height:240px;overflow:auto;padding:10px;background:#080a10;border-radius:12px;border:1px solid #374151}.chat-msg{margin:7px 0;padding:9px 11px;border-radius:12px;background:#1e1b4b;max-width:90%}.chat-msg.mine{margin-left:auto;background:#064e3b}.chat-sender{font-size:.72rem;color:#fbbf24;font-weight:800}.chat-text{margin-top:3px}.chat-time{font-size:.65rem;color:#94a3b8;margin-top:4px}.sync-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;background:#111827;color:#cbd5e1;font-size:.72rem;font-weight:800}.pending-badge{color:#fbbf24}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="trishul-logo"><img src="logo.png" alt="🔱" style="height:30px; vertical-align:middle;"></span>
+      <div>
+        <div class="brand-title">SS ENTERPRISES</div>
+        <div class="brand-subtitle">AAPKI SEVA ME HAMARI KHUSHI</div>
+      </div>
+    </div>
+    <div id="userStatus" class="user-badge" style="display: none;">Offline</div>
+  </header>
+  <div id="offlineStrip" class="offline-strip">🟡 Slow/Offline Network: Data phone me safe save hoga aur network aate hi automatically sync hoga. <span id="pendingCount"></span></div>
+
+  <div class="container">
+    <div id="authSection" class="card" style="max-width: 480px; margin: 30px auto;">
+      <div class="auth-tabs" style="flex-wrap:wrap">
+        <button id="loginTab" class="tab-btn active" onclick="switchAuthTab('login')">Login Portal</button>
+        <button id="signupTab" class="tab-btn" onclick="switchAuthTab('signup')">Staff Registration</button>
+        <button id="coordinatorSignupTab" class="tab-btn" onclick="switchAuthTab('coordinator')">District Coordinator Signup</button>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Select Role</label>
+          <select id="loginRole">
+            <option value="employee">Field Staff / Employee</option>
+            <option value="district_head">District Coordinator</option>
+            <option value="owner">Owner / Admin Control</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Employee ID / Admin Username</label>
+          <input type="text" id="loginId" placeholder="e.g., EMP101, DC001 or SS" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-gold">🚀 Login To Dashboard</button>
+      </form>
+
+      <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signupName" placeholder="Enter Full Name" required>
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="text" id="signupMobile" placeholder="10 Digits Mobile Number" required>
+        </div>
+        <div class="form-group">
+          <label>Assigned Area</label>
+          <input type="text" id="signupArea" placeholder="e.g., Darbhanga" required>
+        </div>
+        <button type="submit" class="btn btn-primary">📝 Register Staff Account</button>
+      </form>
+
+      <form id="coordinatorSignupForm" onsubmit="handleCoordinatorSignup(event)" style="display: none;">
+        <div class="form-group">
+          <label>District Coordinator Full Name</label>
+          <input type="text" id="coordName" placeholder="Enter Coordinator Name" required>
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="text" id="coordMobile" inputmode="numeric" maxlength="10" placeholder="10 Digits Mobile Number" required>
+        </div>
+        <div class="form-group">
+          <label>Select District</label>
+          <select id="coordDistrict" required>
+            <option value="">Select District</option>
+            <option value="Darbhanga">Darbhanga</option>
+            <option value="Madhubani">Madhubani</option>
+            <option value="Sitamarhi">Sitamarhi</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Create Password</label>
+          <input type="password" id="coordPassword" minlength="6" placeholder="Minimum 6 characters" required>
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="coordPassword2" minlength="6" placeholder="Re-enter password" required>
+        </div>
+        <button type="submit" class="btn btn-gold">🏢 Create District Coordinator Account</button>
+        <div class="small-note">Signup ke baad Coordinator ID automatically milegi. Us ID aur banaye gaye password se login kar sakte hain.</div>
+      </form>
+      <div id="authMessage" class="message"></div>
+    </div>
+
+    <div id="staffWorkspace" class="card" style="display: none;">
+      <div class="card-title">👋 Field Work Controls (<span id="staffNameLabel"></span>)</div>
+      <p style="margin-bottom: 15px; color: #9ca3af;">Apna kaam shuru karne ke liye aur GPS location bhejane ke liye niche button dabayein.</p>
+      <button id="workBtn" class="btn btn-success" onclick="toggleFieldWork()">▶ Start Field Work</button>
+
+      <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
+        <div class="card-title">📊 Hourly Card Update</div>
+        <p style="margin-bottom:12px;color:#9ca3af;">Jitni baar update dalenge, har entry total me add hogi. Network slow ho to bhi update pehle phone me save hoga.</p>
+        <form id="cardUpdateForm" onsubmit="handleCardUpdate(event)">
+          <div class="mini-grid">
+            <div class="form-group"><label>Cards</label><input id="cardCount" type="number" min="1" max="10000" placeholder="e.g. 7" required></div>
+            <div class="form-group"><label>Note (optional)</label><input id="cardNote" type="text" placeholder="11 AM update"></div>
+          </div>
+          <button class="btn btn-gold" type="submit">➕ Add Card Update</button>
+        </form>
+        <div id="cardMessage" class="message"></div>
+        <div style="margin-top:14px" class="mini-grid">
+          <div class="stat-box"><div class="stat-label">Today</div><div id="myTodayCards" class="stat-number">0</div></div>
+          <div class="stat-box"><div class="stat-label">All Saved</div><div id="myAllCards" class="stat-number">0</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
+        <div class="card-title">👥 District Team Groups</div>
+        <div id="staffGroupList" class="group-list"></div>
+        <div id="staffChatArea" style="display:none;margin-top:14px;">
+          <div id="staffGroupTitle" class="group-name" style="margin-bottom:8px"></div>
+          <div id="staffChatMessages" class="chat-box"></div>
+          <form onsubmit="sendGroupMessage(event)" style="display:flex;gap:8px;margin-top:8px"><input id="groupMessageInput" placeholder="Message likhiye..." required><button class="btn btn-primary" style="width:auto;padding:12px 16px">Send</button></form>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
+        <div class="card-title">🔱 ABHA Portal</div>
+        <p style="margin-bottom:15px; color:#9ca3af;">ABHA ka official kaam karne ke liye niche button dabayein. Portal browser mein khulega. Kaam khatam hone par browser ka Back button dabakar SS ENTERPRISES app mein wapas aa sakte hain.</p>
+        <div class="mini-grid"><button type="button" class="btn btn-success" onclick="openAbhaApp()">📱 Open ABHA App</button><button type="button" class="btn btn-primary" onclick="openAbhaPortal()">🌐 Open ABHA Portal</button></div>
+        <div class="small-note">ABHA App installed hone par Android us app ko launch karne ki koshish karega. Agar launch support na ho to official portal option available rahega.</div>
+      </div>
+
+      <div class="card" style="margin-top:20px; background:rgba(30,27,75,0.4);">
+        <div class="card-title">🔱 ABHA Customer Entry Portal</div>
+        <form id="customerForm" onsubmit="handleCustomerSubmit(event)">
+          <div class="form-group">
+            <label>Customer Full Name</label>
+            <input type="text" id="cusName" placeholder="Enter customer name" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="text" id="cusMobile" placeholder="10 digits number">
+          </div>
+          <div class="form-group">
+            <label>ABHA Card ID</label>
+            <input type="text" id="cusAbha" placeholder="14 Digits Unique ABHA ID">
+          </div>
+          <button type="submit" class="btn btn-gold">📥 Save ABHA Entry</button>
+        </form>
+        <div id="customerMessage" class="message"></div>
+      </div>
+    </div>
+
+    <div id="districtHeadPanel" style="display:none;">
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-label">District</div><div id="headDistrict" class="stat-number" style="font-size:1.35rem">—</div></div>
+        <div class="stat-box"><div class="stat-label">Today Cards</div><div id="headTodayCards" class="stat-number">0</div></div>
+        <div class="stat-box"><div class="stat-label">District Staff</div><div id="headStaffCount" class="stat-number">0</div></div>
+        <div class="stat-box"><div class="stat-label">Active On Duty</div><div id="headActiveCount" class="stat-number">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">👤 District Head Control Panel — <span id="headName"></span></div>
+        <p class="small-note">Aap sirf apne assigned district ke staff ko dekh aur control kar sakte hain. Owner ko sabhi districts ka access rahega.</p>
+      </div>
+      <div class="card"><div class="card-title">🗺️ Mere District ki Staff Locations</div><div id="headMap" style="height:360px;border-radius:14px;border:1px solid #d97706"></div></div>
+      <div class="card"><div class="card-title">👥 My District Staff</div><div class="table-responsive"><table><thead><tr><th>Name</th><th>ID</th><th>Mobile</th><th>Cards</th><th>Status</th><th>Last Location</th><th>Control</th></tr></thead><tbody id="headStaffBody"></tbody></table></div></div>
+      <div class="card">
+        <div class="card-title">💬 District Team Chat</div>
+        <div id="headGroupList" class="group-list"></div>
+        <div id="headChatArea" style="display:none;margin-top:14px;">
+          <div id="headGroupTitle" class="group-name" style="margin-bottom:8px"></div>
+          <div id="headChatMessages" class="chat-box"></div>
+          <form onsubmit="sendHeadGroupMessage(event)" style="display:flex;gap:8px;margin-top:8px"><input id="headGroupMessageInput" placeholder="Message likhiye..." required><button class="btn btn-primary" style="width:auto;padding:12px 16px">Send</button></form>
+        </div>
+      </div>
+    </div>
+
+    <div id="adminPanel" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-label">Today's Cards</div><div id="adminTodayCards" class="stat-number">0</div></div>
+        <div class="stat-box"><div class="stat-label">Pending Sync</div><div id="adminPendingInfo" class="stat-number">0</div></div>
+        <div class="stat-box">
+          <div class="stat-label">Total Field Staff</div>
+          <div id="totalStaffCount" class="stat-number">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Active On Duty</div>
+          <div id="activeStaffCount" class="stat-number">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏢 District Teams & Card Summary</div>
+        <div id="adminGroupSummary" class="mini-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗺 Real-Time Employee Field Live Tracking Map</div>
+        <div id="map"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 Active Field Staff Control</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Staff Name</th>
+                <th>Employee ID</th>
+                <th>Mobile</th>
+                <th>District</th>
+                <th>Place / GPS</th>
+                <th>ABHA Cards</th>
+                <th>GPS Status</th>
+                <th>Last Sync</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Registered ABHA Customer Logs</div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Mobile</th>
+                <th>ABHA ID</th>
+                <th>Done By</th>
+                <th>Date & Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    let myEmpId = null;
+    let locationIntervalId = null;
+    let adminStateIntervalId = null;
+    let adminMap = null;
+    let markerLayer = null;
+    let selectedGroupId = null;
+    let groupRefreshTimer = null;
+    let headRefreshTimer = null;
+    let headMap = null;
+    let headMarkerLayer = null;
+    let myHeadDistrict = null;
+    let selectedHeadGroupId = null;
+    let pendingQueue = JSON.parse(localStorage.getItem('ss_pending_queue') || '[]');
+
+    const $ = (id) => document.getElementById(id);
+
+    function showMessage(id, text, ok = false) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'message ' + (ok ? 'ok' : 'error');
+    }
+
+    function switchAuthTab(tab) {
+      const login = tab === 'login';
+      const staff = tab === 'signup';
+      $('loginForm').style.display = login ? 'block' : 'none';
+      $('signupForm').style.display = staff ? 'block' : 'none';
+      $('coordinatorSignupForm').style.display = tab === 'coordinator' ? 'block' : 'none';
+      $('loginTab').classList.toggle('active', login);
+      $('signupTab').classList.toggle('active', staff);
+      $('coordinatorSignupTab').classList.toggle('active', tab === 'coordinator');
+      $('authMessage').className = 'message';
+      $('authMessage').textContent = '';
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error('Server response invalid (' + response.status + ')'); }
+      if (!response.ok) throw new Error(data.message || 'Server error');
+      return data;
+    }
+
+    function saveQueue(){ localStorage.setItem('ss_pending_queue', JSON.stringify(pendingQueue)); updatePendingUI(); }
+    function updatePendingUI(){ const n=pendingQueue.length; const s=$('offlineStrip'); if(s) s.classList.toggle('show', !navigator.onLine || n>0); if($('pendingCount')) $('pendingCount').textContent=n?' Pending items: '+n:''; if($('adminPendingInfo')) $('adminPendingInfo').textContent=n; }
+    async function queuePost(url, body){
+      try { return await api(url,{method:'POST',body:JSON.stringify(body)}); }
+      catch(err){
+        if(!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(err.message)){ pendingQueue.push({id:Date.now()+'-'+Math.random(),url,body}); saveQueue(); return {ok:true,queued:true,message:'Offline queue me save hua.'}; }
+        throw err;
+      }
+    }
+    async function flushQueue(){
+      if(!navigator.onLine || !pendingQueue.length) return;
+      const current=[...pendingQueue]; pendingQueue=[]; saveQueue();
+      for(const item of current){ try{ const r=await api(item.url,{method:'POST',body:JSON.stringify(item.body)}); if(!r.ok) throw new Error(r.message||'sync failed'); }catch(e){ pendingQueue.push(item); }}
+      saveQueue();
+      if(myEmpId) { refreshMySummary().catch(()=>{}); refreshGroups().catch(()=>{}); }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const role = $('loginRole').value;
+      const id = $('loginId').value.trim();
+      const password = $('loginPassword').value;
+
+      try {
+        const data = await api('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({ role, id, password })
+        });
+
+        if (!data.ok) {
+          showMessage('authMessage', data.message || 'Invalid ID or Password.');
+          return;
+        }
+
+        $('authSection').style.display = 'none';
+        $('userStatus').style.display = 'block';
+
+        if (data.role === 'owner') {
+          $('userStatus').textContent = '👑 Admin';
+          $('adminPanel').style.display = 'block';
+          initAdminMap();
+          renderAdminState(data.state);
+          startAdminRefresh();
+        } else if (data.role === 'district_head') {
+          myHeadDistrict = data.head.district;
+          $('userStatus').textContent = '🏢 ' + data.head.district + ' Head';
+          $('districtHeadPanel').style.display = 'block';
+          $('headDistrict').textContent = data.head.district;
+          $('headName').textContent = data.head.name;
+          initHeadMap();
+          renderDistrictHeadState(data.state);
+          startHeadRefresh();
+          refreshHeadGroups().catch(()=>{});
+          if(groupRefreshTimer) clearInterval(groupRefreshTimer); groupRefreshTimer=setInterval(()=>{refreshHeadGroups().catch(()=>{});},15000);
+        } else {
+          myEmpId = data.employee.id;
+          $('userStatus').textContent = '🟢 ' + data.employee.id;
+          $('staffWorkspace').style.display = 'block';
+          $('staffNameLabel').textContent = data.employee.name;
+          localStorage.setItem('ss_session', JSON.stringify({role:'employee',employee:data.employee}));
+          updateWorkButton(data.employee.status);
+          refreshMySummary().catch(()=>{});
+          refreshGroups().catch(()=>{});
+          if(groupRefreshTimer) clearInterval(groupRefreshTimer); groupRefreshTimer=setInterval(()=>{refreshGroups().catch(()=>{});},15000);
+        }
+      } catch (err) {
+        showMessage('authMessage', 'Login error: ' + err.message);
+      }
+    }
+
+    async function handleSignup(event) {
+      event.preventDefault();
+      const name = $('signupName').value.trim();
+      const phone = $('signupMobile').value.trim();
+      const area = $('signupArea').value.trim();
+
+      try {
+        const data = await api('/api/signup', {
+          method: 'POST',
+          body: JSON.stringify({ name, phone, area })
+        });
+
+        if (!data.ok) {
+          showMessage('authMessage', data.message || 'Registration failed.');
+          return;
+        }
+
+        showMessage('authMessage', 'Registration successful! Employee ID: ' + data.employee.id + ' | Password: ' + data.password, true);
+        $('signupForm').reset();
+        $('loginRole').value = 'employee';
+        $('loginId').value = data.employee.id;
+        $('loginPassword').value = data.password;
+        switchAuthTab('login');
+        showMessage('authMessage', 'Registration successful! ID: ' + data.employee.id + ' | Password: ' + data.password, true);
+      } catch (err) {
+        showMessage('authMessage', 'Registration error: ' + err.message);
+      }
+    }
+
+    async function handleCoordinatorSignup(event) {
+      event.preventDefault();
+      const name=$('coordName').value.trim();
+      const phone=$('coordMobile').value.trim();
+      const district=$('coordDistrict').value;
+      const password=$('coordPassword').value;
+      const password2=$('coordPassword2').value;
+      if(!/^\d{10}$/.test(phone)) return showMessage('authMessage','Mobile number 10 digits ka hona chahiye.');
+      if(password.length<6) return showMessage('authMessage','Password minimum 6 characters ka hona chahiye.');
+      if(password!==password2) return showMessage('authMessage','Password aur Confirm Password same nahi hai.');
+      try {
+        const data=await api('/api/district-coordinator-signup',{method:'POST',body:JSON.stringify({name,phone,district,password})});
+        if(!data.ok) return showMessage('authMessage',data.message||'Coordinator registration failed.');
+        $('coordinatorSignupForm').reset();
+        $('loginRole').value='district_head';
+        $('loginId').value=data.coordinator.id;
+        $('loginPassword').value=password;
+        switchAuthTab('login');
+        showMessage('authMessage','District Coordinator account created successfully! ID: '+data.coordinator.id+' | Password: '+password,true);
+      } catch(err) { showMessage('authMessage','Coordinator registration error: '+err.message); }
+    }
+
+    async function toggleFieldWork() {
+      if (!myEmpId) return;
+      const btn = $('workBtn');
+      const starting = !btn.dataset.working || btn.dataset.working !== 'true';
+      try {
+        if (starting) {
+          if (!navigator.geolocation) {
+            showMessage('authMessage', 'Is device/browser me GPS available nahi hai.');
+            return;
+          }
+
+          const position = await getCurrentPosition();
+          await syncLocation(position);
+          await setWorkStatus('Online');
+          btn.dataset.working = 'true';
+          updateWorkButton('Online');
+          startLocationTracking();
+        } else {
+          stopLocationTracking();
+          await setWorkStatus('Offline');
+          btn.dataset.working = 'false';
+          updateWorkButton('Offline');
+        }
+      } catch (err) {
+        showMessage('authMessage', 'GPS/Work error: ' + err.message);
+      }
+    }
+
+    function updateWorkButton(status) {
+      const online = status === 'Online';
+      const btn = $('workBtn');
+      btn.dataset.working = online ? 'true' : 'false';
+      btn.textContent = online ? '⏹ Stop Field Work' : '▶ Start Field Work';
+      btn.className = 'btn ' + (online ? 'btn-danger' : 'btn-success');
+    }
+
+    function getCurrentPosition() {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 5000
+        });
+      });
+    }
+
+    async function setWorkStatus(status) {
+      const data = await queuePost('/api/work-status', { id: myEmpId, status });
+      if (!data.ok) throw new Error('Employee record nahi mila.');
+    }
+
+    async function syncLocation(position) {
+      const coords = position.coords;
+      const data = await queuePost('/api/location-sync', { id: myEmpId, lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy });
+      if (!data.ok) throw new Error('Location save nahi hui.');
+    }
+
+    function startLocationTracking() {
+      stopLocationTracking();
+      locationIntervalId = setInterval(async () => {
+        if (!myEmpId) return;
+        try {
+          const position = await getCurrentPosition();
+          await syncLocation(position);
+        } catch (err) {
+          console.warn('Location sync:', err.message);
+        }
+      }, 20000);
+    }
+
+    function stopLocationTracking() {
+      if (locationIntervalId) {
+        clearInterval(locationIntervalId);
+        locationIntervalId = null;
+      }
+    }
+
+    function initAdminMap() {
+      if (adminMap) {
+        setTimeout(() => adminMap.invalidateSize(), 200);
+        return;
+      }
+      adminMap = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(adminMap);
+      markerLayer = L.layerGroup().addTo(adminMap);
+      setTimeout(() => adminMap.invalidateSize(), 300);
+    }
+
+    function renderAdminState(state) {
+      const employees = Array.isArray(state.employees) ? state.employees : [];
+      const customers = Array.isArray(state.customers) ? state.customers : [];
+      const updates = Array.isArray(state.cardUpdates) ? state.cardUpdates : [];
+      const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
+      const todayTotal = updates.filter(u=>u.dateKey===today).reduce((a,u)=>a+Number(u.count||0),0);
+      $('adminTodayCards').textContent = todayTotal;
+
+      $('totalStaffCount').textContent = employees.length;
+      $('activeStaffCount').textContent = employees.filter(e => e.status === 'Online').length;
+
+      $('staffTableBody').innerHTML = employees.map(e => `
+        <tr>
+          <td>${esc(e.name)}</td>
+          <td>${esc(e.id)}</td>
+          <td>${esc(e.phone)}</td>
+          <td>${esc(e.district || e.area || '—')}</td>
+          <td>${esc(e.placeName || e.location || '—')} ${e.lat&&e.lng?'<br><a href="https://www.google.com/maps?q='+encodeURIComponent(e.lat+','+e.lng)+'" target="_blank" rel="noopener" style="color:#60a5fa">Open Map</a>':''}</td>
+          <td>${Number(e.cards || 0)}</td>
+          <td>${e.status === 'Online'
+            ? '<span class="badge-online">ONLINE</span>'
+            : '<span class="badge-offline">OFFLINE</span>'}</td>
+          <td>${esc(e.last || '—')}</td>
+        </tr>
+      `).join('');
+
+      $('customerTableBody').innerHTML = customers.length ? customers.map(c => `
+        <tr>
+          <td>${esc(c.name)}</td>
+          <td>${esc(c.mobile)}</td>
+          <td>${esc(c.abha)}</td>
+          <td>${esc(c.employeeName || c.employeeId || '—')}</td>
+          <td>${esc(c.date || '—')}</td>
+          <td><button class="btn btn-danger" style="width:auto;padding:8px 12px;" onclick="deleteCustomer('${escAttr(c.id)}')">Delete</button></td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">No customer entries yet.</td></tr>';
+
+      updateMapMarkers(employees);
+      renderAdminGroupSummary(state);
+    }
+
+    function renderAdminGroupSummary(state){
+      const groups=Array.isArray(state.groups)?state.groups:[]; const updates=Array.isArray(state.cardUpdates)?state.cardUpdates:[]; const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
+      $('adminGroupSummary').innerHTML=groups.map(g=>{const total=updates.filter(u=>u.district===g.district&&u.dateKey===today).reduce((a,u)=>a+Number(u.count||0),0);return `<div class="stat-box"><div class="stat-label">${esc(g.district)}</div><div class="stat-number">${total}</div><div class="group-meta">${(g.members||[]).length} staff</div></div>`}).join('')||'<div class="small-note">No district groups yet.</div>';
+    }
+
+    function updateMapMarkers(employees) {
+      if (!adminMap || !markerLayer) return;
+      markerLayer.clearLayers();
+
+      const points = [];
+      employees.forEach(e => {
+        if (Number.isFinite(Number(e.lat)) && Number.isFinite(Number(e.lng))) {
+          const lat = Number(e.lat), lng = Number(e.lng);
+          points.push([lat, lng]);
+          const marker = L.marker([lat, lng]).addTo(markerLayer);
+          marker.bindPopup(
+            '<b>' + esc(e.name) + '</b><br>' +
+            'ID: ' + esc(e.id) + '<br>' +
+            'Status: ' + esc(e.status || 'Offline') + '<br>' +
+            'Last: ' + esc(e.last || '—') + '<br>' +
+            'Place: ' + esc(e.placeName || e.location || '—') + '<br>' +
+            'GPS: ' + esc(e.location || '—')
+          );
+        }
+      });
+
+      if (points.length === 1) adminMap.setView(points[0], 16);
+      else if (points.length > 1) adminMap.fitBounds(points, { padding: [30, 30] });
+    }
+
+    async function refreshAdminState() {
+      try {
+        const state = await api('/api/state', { cache: 'no-store' });
+        renderAdminState(state);
+      } catch (err) {
+        console.warn('Admin refresh:', err.message);
+      }
+    }
+
+    function startAdminRefresh() {
+      if (adminStateIntervalId) clearInterval(adminStateIntervalId);
+      adminStateIntervalId = setInterval(refreshAdminState, 5000);
+    }
+
+    function openAbhaPortal() {
+      const url = 'https://abha.abdm.gov.in/abha/v3/';
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function openAbhaApp(){
+      // Official Android ABHA package. Exact internal screen/deep-link is not assumed.
+      const intentUrl='intent://#Intent;scheme=abha;package=in.ndhm.phr;end';
+      const fallback='https://play.google.com/store/apps/details?id=in.ndhm.phr';
+      const started=Date.now();
+      window.location.href=intentUrl;
+      setTimeout(()=>{ if(Date.now()-started<1800) window.open(fallback,'_blank','noopener,noreferrer'); },1200);
+    }
+
+    async function handleCustomerSubmit(event) {
+      event.preventDefault();
+      if (!myEmpId) return showMessage('customerMessage', 'Pehle employee login kijiye.');
+
+      try {
+        const data = await queuePost('/api/add-customer', { empId: myEmpId, name: $('cusName').value.trim(), mobile: $('cusMobile').value.trim(), abha: $('cusAbha').value.trim(), clientId: 'CUS-'+myEmpId+'-'+Date.now()+'-'+Math.random().toString(36).slice(2) });
+
+        if (!data.ok) {
+          showMessage('customerMessage', data.message || 'Save failed.');
+          return;
+        }
+
+        $('customerForm').reset();
+        showMessage('customerMessage', 'ABHA entry successfully saved.', true);
+      } catch (err) {
+        showMessage('customerMessage', 'Save error: ' + err.message);
+      }
+    }
+
+    async function handleCardUpdate(event){
+      event.preventDefault(); if(!myEmpId) return showMessage('cardMessage','Pehle employee login kijiye.');
+      const count=Number($('cardCount').value), note=$('cardNote').value.trim();
+      try{ const data=await queuePost('/api/card-update',{empId:myEmpId,count,note,clientId:'CARD-'+myEmpId+'-'+Date.now()+'-'+Math.random().toString(36).slice(2)}); $('cardUpdateForm').reset(); showMessage('cardMessage',data.queued?'Update offline save hua; network aate hi sync hoga.':'Card update saved. Total: '+(data.totalCards||''),true); await refreshMySummary(); }catch(e){showMessage('cardMessage','Card update error: '+e.message);}
+    }
+    async function refreshMySummary(){
+      if(!myEmpId) return;
+      try{ const data=await api('/api/card-summary?date='+encodeURIComponent(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date()))); const n=(data.byEmployee||{})[myEmpId]||0; $('myTodayCards').textContent=n; const state=await api('/api/state',{cache:'no-store'}); const me=(state.employees||[]).find(e=>e.id===myEmpId); $('myAllCards').textContent=me?Number(me.cards||0):n; }catch(e){ console.warn(e.message); }
+    }
+    async function refreshGroups(){
+      try{ const data=await api('/api/groups'); const groups=data.groups||[]; $('staffGroupList').innerHTML=groups.map(g=>`<div class="group-item ${selectedGroupId===g.id?'active':''}" onclick="selectGroup('${escAttr(g.id)}')"><div class="group-name">${esc(g.name)}</div><div class="group-meta">${esc(g.district)} • ${(g.members||[]).length} members</div></div>`).join(''); if(selectedGroupId) await loadGroupMessages(selectedGroupId); }catch(e){console.warn('Groups:',e.message);}
+    }
+    async function selectGroup(id){ selectedGroupId=id; await refreshGroups(); $('staffChatArea').style.display='block'; }
+    async function loadGroupMessages(id){ try{ const data=await api('/api/groups/'+encodeURIComponent(id)+'/messages'); const box=$('staffChatMessages'); box.innerHTML=(data.messages||[]).map(m=>`<div class="chat-msg ${m.employeeId===myEmpId?'mine':''}"><div class="chat-sender">${esc(m.senderName)}</div><div class="chat-text">${esc(m.text)}</div><div class="chat-time">${esc(m.date)}</div></div>`).join('')||'<div class="small-note">No messages yet.</div>'; box.scrollTop=box.scrollHeight; const g=(await api('/api/groups')).groups.find(x=>x.id===id); $('staffGroupTitle').textContent=g?g.name:'District Group'; }catch(e){console.warn(e.message);} }
+    async function sendGroupMessage(event){ event.preventDefault(); if(!selectedGroupId||!myEmpId)return; const input=$('groupMessageInput'); const text=input.value.trim(); if(!text)return; try{ const data=await queuePost('/api/group-message',{groupId:selectedGroupId,empId:myEmpId,text}); input.value=''; await loadGroupMessages(selectedGroupId); }catch(e){alert('Message error: '+e.message);} }
+
+
+    async function refreshHeadGroups(){
+      if(!myHeadDistrict) return;
+      try {
+        const data=await api('/api/groups');
+        const groups=(data.groups||[]).filter(g=>String(g.district).toLowerCase()===String(myHeadDistrict).toLowerCase());
+        $('headGroupList').innerHTML=groups.map(g=>`<div class="group-item ${selectedHeadGroupId===g.id?'active':''}" onclick="selectHeadGroup('${escAttr(g.id)}')"><div class="group-name">${esc(g.name)}</div><div class="group-meta">${esc(g.district)} • ${(g.members||[]).length} members</div></div>`).join('')||'<div class="small-note">Is district ka group abhi available nahi hai.</div>';
+        if(selectedHeadGroupId && groups.some(g=>g.id===selectedHeadGroupId)) await loadHeadGroupMessages(selectedHeadGroupId);
+      } catch(e){console.warn('Head groups:',e.message);}
+    }
+    async function selectHeadGroup(id){ selectedHeadGroupId=id; $('headChatArea').style.display='block'; await refreshHeadGroups(); }
+    async function loadHeadGroupMessages(id){
+      try {
+        const data=await api('/api/groups/'+encodeURIComponent(id)+'/messages');
+        $('headChatMessages').innerHTML=(data.messages||[]).map(m=>`<div class="chat-msg"><div class="chat-sender">${esc(m.senderName)}</div><div class="chat-text">${esc(m.text)}</div><div class="chat-time">${esc(m.date)}</div></div>`).join('')||'<div class="small-note">No messages yet.</div>';
+        $('headChatMessages').scrollTop=$('headChatMessages').scrollHeight;
+        const groups=(await api('/api/groups')).groups||[]; const g=groups.find(x=>x.id===id); $('headGroupTitle').textContent=g?g.name:'District Group';
+      } catch(e){console.warn('Head chat:',e.message);}
+    }
+    async function sendHeadGroupMessage(event){
+      event.preventDefault(); if(!selectedHeadGroupId) return;
+      const input=$('headGroupMessageInput'); const text=input.value.trim(); if(!text) return;
+      try { const r=await api('/api/group-message',{method:'POST',body:JSON.stringify({groupId:selectedHeadGroupId,empId:'HEAD:'+myHeadDistrict,text,headDistrict:myHeadDistrict})}); if(!r.ok) throw new Error(r.message||'Message failed'); input.value=''; await loadHeadGroupMessages(selectedHeadGroupId); }
+      catch(e){alert('Message error: '+e.message);}
+    }
+
+    function initHeadMap(){
+      if(headMap){setTimeout(()=>headMap.invalidateSize(),200);return;}
+      headMap=L.map('headMap').setView([25.6,85.1],8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(headMap);
+      headMarkerLayer=L.layerGroup().addTo(headMap);
+    }
+    function renderDistrictHeadState(state){
+      const employees=Array.isArray(state.employees)?state.employees:[], updates=Array.isArray(state.cardUpdates)?state.cardUpdates:[];
+      const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
+      $('headTodayCards').textContent=updates.filter(u=>u.dateKey===today).reduce((a,u)=>a+Number(u.count||0),0);
+      $('headStaffCount').textContent=employees.length; $('headActiveCount').textContent=employees.filter(e=>e.status==='Online'&&e.enabled!==false).length;
+      $('headStaffBody').innerHTML=employees.map(e=>`<tr><td>${esc(e.name)}</td><td>${esc(e.id)}</td><td>${esc(e.phone)}</td><td>${Number(e.cards||0)}</td><td>${e.status==='Online'?'<span class="badge-online">ONLINE</span>':'<span class="badge-offline">OFFLINE</span>'}${e.enabled===false?' <span class="pending-badge">DISABLED</span>':''}</td><td>${esc(e.placeName||e.location||'—')} ${e.lat&&e.lng?'<br><a href="https://www.google.com/maps?q='+encodeURIComponent(e.lat+','+e.lng)+'" target="_blank" style="color:#60a5fa">Map</a>':''}</td><td><button class="btn '+(e.enabled===false?'btn-success':'btn-danger')+'" style="width:auto;padding:8px 10px" onclick="controlStaff(\'${escAttr(e.id)}\',\'${e.enabled===false?'enable':'disable'}\')">${e.enabled===false?'Enable':'Disable'}</button> <button class="btn btn-primary" style="width:auto;padding:8px 10px;margin-top:5px" onclick="controlStaff(\'${escAttr(e.id)}\',\'logout\')">Logout</button></td></tr>`).join('')||'<tr><td colspan=7 style="text-align:center;color:#9ca3af">No staff in this district.</td></tr>';
+      if(headMarkerLayer){headMarkerLayer.clearLayers();const pts=[];employees.forEach(e=>{if(Number.isFinite(Number(e.lat))&&Number.isFinite(Number(e.lng))){const pt=[Number(e.lat),Number(e.lng)];pts.push(pt);L.marker(pt).addTo(headMarkerLayer).bindPopup('<b>'+esc(e.name)+'</b><br>Place: '+esc(e.placeName||'—')+'<br>Status: '+esc(e.status||'Offline'));}});if(pts.length===1)headMap.setView(pts[0],15);else if(pts.length>1)headMap.fitBounds(pts,{padding:[25,25]});}}
+    async function refreshHeadState(){if(!myHeadDistrict)return;try{const d=await api('/api/district-state?district='+encodeURIComponent(myHeadDistrict));if(d.ok)renderDistrictHeadState(d.state);}catch(e){console.warn('Head refresh:',e.message);}}
+    function startHeadRefresh(){if(headRefreshTimer)clearInterval(headRefreshTimer);headRefreshTimer=setInterval(refreshHeadState,7000);}
+    async function controlStaff(id,action){if(!myHeadDistrict)return;try{const e=(await api('/api/district-state?district='+encodeURIComponent(myHeadDistrict))).state.employees.find(x=>x.id===id);if(!e){alert('Staff is district mein nahi hai.');return;}const r=await api('/api/staff-control',{method:'POST',body:JSON.stringify({id,action,district:myHeadDistrict})});if(!r.ok)throw new Error(r.message||'Control failed');refreshHeadState();}catch(err){alert('Control error: '+err.message);}}
+
+    async function deleteCustomer(id) {
+      if (!confirm('Is customer entry ko delete karna hai?')) return;
+      try {
+        const data = await api('/api/delete-customer', {
+          method: 'POST',
+          body: JSON.stringify({ id })
+        });
+        if (!data.ok) throw new Error(data.message || 'Delete failed.');
+        await refreshAdminState();
+      } catch (err) {
+        alert('Delete error: ' + err.message);
+      }
+    }
+
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[ch]));
+    }
+
+    function escAttr(value) {
+      return String(value ?? '').replace(/['\\]/g, ch => '\\' + ch);
+    }
+
+
+    window.addEventListener('online',()=>{updatePendingUI();flushQueue();});
+    window.addEventListener('offline',()=>updatePendingUI());
+    window.addEventListener('load',()=>{updatePendingUI(); if(navigator.onLine) flushQueue();});
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW:', err));
+      });
+    }
+  </script>
+</body>
+</html>
