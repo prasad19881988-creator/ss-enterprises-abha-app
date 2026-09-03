@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ss-enterprises-abha-app
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: ss-enterprises-abha-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -1,0 +1,16 @@
+{
+  "name": "ss-enterprises-abha-realtime-app",
+  "version": "4.3.0",
+  "description": "SS ENTERPRISES ABHA field work portal with owner-controlled DC/TL/staff hierarchy, live location, work updates and secure role sessions",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
