@@ -1,0 +1,16 @@
+{
+  "name": "ss-enterprises-abha-realtime-app",
+  "version": "4.0.0",
+  "description": "Real-time field tracking and ABHA work management portal for SS ENTERPRISES",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
