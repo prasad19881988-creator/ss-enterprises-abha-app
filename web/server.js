@@ -148,7 +148,7 @@ function getSession(req) {
   }
   return s;
 }
-const PUBLIC_API = new Set(['/api/login','/api/signup','/api/district-coordinator-signup','/api/districts','/api/team-leaders']);
+const PUBLIC_API = new Set(['/login','/signup','/district-coordinator-signup','/districts','/team-leaders']);
 app.use('/api', (req,res,next) => {
   if (PUBLIC_API.has(req.path)) return next();
   const user = getSession(req);
