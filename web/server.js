@@ -148,7 +148,8 @@ function getSession(req) {
   }
   return s;
 }
-const PUBLIC_API = new Set(['/login','/signup','/district-coordinator-signup','/districts','/team-leaders']);
+const PUBLIC_API = new Set([
+'/login','/signup','/district-coordinator-signup','/districts','/team-leaders']);
 app.use('/api', (req,res,next) => {
   if (PUBLIC_API.has(req.path)) return next();
   const user = getSession(req);
@@ -244,6 +245,29 @@ function teamState(tlId){
   const employees=dbState.employees.filter(e=>tl.staffIds.includes(e.id) && e.active!==false);
   return {teamLeaders:[(()=>{const {password,...safe}=tl;return safe;})()],employees};
 }
+app.get('/api/session',(req,res)=>{
+  const s=getSession(req);
+  if(!s)return res.status(401).json({ok:false});
+  if(s.role==='owner')return res.json({ok:true,role:'owner',state:publicState()});
+  if(s.role==='district_head'){
+    const h=dbState.districtHeads.find(x=>x.id===s.id);
+    if(!h)return res.status(401).json({ok:false});
+    const safe={...h}; delete safe.password;
+    return res.json({ok:true,role:'district_head',head:safe,state:districtState(h.district)});
+  }
+  if(s.role==='team_leader'){
+    const t=dbState.teamLeaders.find(x=>x.id===s.id);
+    if(!t)return res.status(401).json({ok:false});
+    const safe={...t}; delete safe.password;
+    return res.json({ok:true,role:'team_leader',teamLeader:safe,state:teamState(t.id)});
+  }
+  if(s.role==='employee'){
+    const e=dbState.employees.find(x=>x.id===s.id);
+    if(!e)return res.status(401).json({ok:false});
+    return res.json({ok:true,role:'employee',employee:e});
+  }
+  return res.status(401).json({ok:false});
+});
 app.post('/api/login',(req,res)=>{
   const role=clean(req.body.role), id=clean(req.body.id), password=typeof req.body.password==='string'?req.body.password:'';
   if(role==='owner' && (id.toUpperCase()==='SS'||id.toUpperCase()==='ADMIN') && password===(process.env.OWNER_PASSWORD||'ADMIN@12345')) {

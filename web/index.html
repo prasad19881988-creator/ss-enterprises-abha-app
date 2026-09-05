@@ -907,7 +907,64 @@ function callStaff(phone){
 
 function hardRefresh(){location.reload();}
     async function logoutUser(){try{if(myEmpId&&locationIntervalId)navigator.geolocation.clearWatch(locationIntervalId);}catch{} try{await api('/api/logout',{method:'POST'});}catch{} localStorage.removeItem('ss_session');localStorage.removeItem('ss_auth_token');myAuthToken=null;myTLId=null; if(groupRefreshTimer)clearInterval(groupRefreshTimer);if(tlRefreshTimer)clearInterval(tlRefreshTimer);if(headRefreshTimer)clearInterval(headRefreshTimer);if(adminStateIntervalId)clearInterval(adminStateIntervalId);location.reload();}
-    document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getElementById('appSplash')?.classList.add('hide'),700);loadDistrictOptions();$('signupDistrict')?.addEventListener('change',loadSignupTLs);$('tlDistrict')?.addEventListener('change',()=>{});loadTLs();});
+    async function restoreSavedSession(){
+  if(!myAuthToken)return;
+  try{
+    const data=await api('/api/session');
+
+    $('authSection').style.display='none';
+    $('userStatus').style.display='block';
+    $('refreshBtn').style.display='block';
+    $('logoutBtn').style.display='block';
+
+    if(data.role==='owner'){
+      $('userStatus').textContent='👑 Admin';
+      $('adminPanel').style.display='block';
+      initAdminMap();
+      renderAdminState(data.state);
+      startAdminRefresh();
+      loadTLs();
+    }else if(data.role==='district_head'){
+      myHeadDistrict=data.head.district;
+      $('userStatus').textContent='🏢 '+data.head.district+' Head';
+      $('districtHeadPanel').style.display='block';
+      $('headDistrict').textContent=data.head.district;
+      $('headName').textContent=data.head.name;
+      initHeadMap();
+      renderDistrictHeadState(data.state);
+      startHeadRefresh();
+      refreshHeadGroups().catch(()=>{});
+      if(groupRefreshTimer)clearInterval(groupRefreshTimer);
+      groupRefreshTimer=setInterval(()=>{refreshHeadGroups().catch(()=>{});},15000);
+    }else if(data.role==='team_leader'){
+      myTLId=data.teamLeader.id;
+      myTLDistrict=data.teamLeader.district;
+      $('userStatus').textContent='👥 TL '+data.teamLeader.id;
+      $('teamLeaderPanel').style.display='block';
+      $('tlNameLabel').textContent=data.teamLeader.name;
+      $('tlDistrictLabel').textContent=data.teamLeader.district;
+      refreshTLState().catch(()=>{});
+      if(tlRefreshTimer)clearInterval(tlRefreshTimer);
+      tlRefreshTimer=setInterval(()=>refreshTLState().catch(()=>{}),15000);
+    }else if(data.role==='employee'){
+      myEmpId=data.employee.id;
+      $('userStatus').textContent='🟢 '+data.employee.id;
+      $('staffWorkspace').style.display='block';
+      $('staffNameLabel').textContent=data.employee.name;
+      updateWorkButton(data.employee.status);
+      refreshMySummary().catch(()=>{});
+      refreshGroups().catch(()=>{});
+      if(groupRefreshTimer)clearInterval(groupRefreshTimer);
+      groupRefreshTimer=setInterval(()=>{refreshGroups().catch(()=>{});},15000);
+    }
+  }catch(e){
+    localStorage.removeItem('ss_auth_token');
+    localStorage.removeItem('ss_session');
+    myAuthToken=null;
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getElementById('appSplash')?.classList.add('hide'),700);loadDistrictOptions();$('signupDistrict')?.addEventListener('change',loadSignupTLs);$('tlDistrict')?.addEventListener('change',()=>{});loadTLs();restoreSavedSession();});
 
     window.addEventListener('online',()=>{updatePendingUI();flushQueue();});
     window.addEventListener('offline',()=>updatePendingUI());
