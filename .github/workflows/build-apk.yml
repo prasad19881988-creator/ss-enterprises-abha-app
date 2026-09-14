@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout
@@ -20,15 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.10.2"
 
-      - name: Build debug APK
-        working-directory: android
+      - name: Build Android APK
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Upload APK
