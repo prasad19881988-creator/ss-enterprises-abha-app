@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.PermissionRequest
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val permissionRequestCode = 1002
 
     private val appUrl = "https://ss-enterprises-abha-app-2026.onrender.com/"
+    private val handler = Handler(Looper.getMainLooper())
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +45,8 @@ class MainActivity : AppCompatActivity() {
         configureWebView()
         requestNeededPermissions()
 
-        // Hamesha fresh aur live data load hoga, purana cached state load nahi hoga
-        loadApp()
+        // App khulte hi URL load karega bina kisi crash risk ke
+        loadAppSafely()
 
         onBackPressedDispatcher.addCallback(
             this,
@@ -79,7 +82,6 @@ class MainActivity : AppCompatActivity() {
             displayZoomControls = false
 
             javaScriptCanOpenWindowsAutomatically = true
-
             userAgentString = "$userAgentString SS-ENTERPRISES-ABHA-Android/4.3"
         }
 
@@ -122,12 +124,16 @@ class MainActivity : AppCompatActivity() {
                 error: WebResourceError
             ) {
                 super.onReceivedError(view, request, error)
+                // Agar server slow hone ki wajah se error aaye toh app crash nahi hoga, balki thodi der baad dobara koshish karega
                 if (request.isForMainFrame) {
-                    view.postDelayed({
+                    handler.postDelayed({
                         if (!isFinishing && !isDestroyed) {
-                            view.loadUrl(appUrl)
+                            try {
+                                view.loadUrl(appUrl)
+                            } catch (_: Exception) {
+                            }
                         }
-                    }, 1500)
+                    }, 3000)
                 }
             }
 
@@ -235,18 +241,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadApp() {
+    private fun loadAppSafely() {
         try {
             webView.loadUrl(appUrl)
         } catch (_: Exception) {
-            webView.postDelayed({
+            handler.postDelayed({
                 if (!isFinishing && !isDestroyed) {
                     try {
                         webView.loadUrl(appUrl)
                     } catch (_: Exception) {
                     }
                 }
-            }, 1000)
+            }, 2000)
         }
     }
 
