@@ -32,7 +32,8 @@ class MainActivity : AppCompatActivity() {
     private val fileRequestCode = 1001
     private val permissionRequestCode = 1002
 
-    private val appUrl = "https://ss-enterprises-abha-app-2026.onrender.com/"
+    // Yahan aapka Admin Panel URL set kar diya gaya hai
+    private val appUrl = "https://ss-enterprises-website.onrender.com/admin.html"
     private val handler = Handler(Looper.getMainLooper())
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -45,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         configureWebView()
         requestNeededPermissions()
 
-        // App khulte hi URL load karega bina kisi crash risk ke
+        // App khulte hi Admin Panel load karega
         loadAppSafely()
 
         onBackPressedDispatcher.addCallback(
@@ -82,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             displayZoomControls = false
 
             javaScriptCanOpenWindowsAutomatically = true
-            userAgentString = "$userAgentString SS-ENTERPRISES-ABHA-Android/4.3"
+            userAgentString = "$userAgentString SS-ENTERPRISES-ABHA-Admin/4.3"
         }
 
         CookieManager.getInstance().apply {
@@ -124,7 +125,6 @@ class MainActivity : AppCompatActivity() {
                 error: WebResourceError
             ) {
                 super.onReceivedError(view, request, error)
-                // Agar server slow hone ki wajah se error aaye toh app crash nahi hoga, balki thodi der baad dobara koshish karega
                 if (request.isForMainFrame) {
                     handler.postDelayed({
                         if (!isFinishing && !isDestroyed) {
