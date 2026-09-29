@@ -10,13 +10,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Message
 import android.webkit.CookieManager
-import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -24,7 +22,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.io.ByteArrayInputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,12 +35,9 @@ class MainActivity : AppCompatActivity() {
     private val appUrl =
         "https://ss-enterprises-abha-app-2026.onrender.com/"
 
-    private val abhaPackage =
-        "in.ndhm.phr"
-
     private var rendererRecoveryInProgress = false
 
-    private var launchingAbha = false
+    private var openingExternalApp = false
 
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -76,6 +70,7 @@ class MainActivity : AppCompatActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
+
                     if (webView.canGoBack()) {
                         webView.goBack()
                     } else {
@@ -88,6 +83,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun loadPortal() {
+
         if (isFinishing || isDestroyed) return
 
         try {
@@ -97,7 +93,9 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun isAllowedWebHost(host: String?): Boolean {
+    private fun isAllowedWebHost(
+        host: String?
+    ): Boolean {
 
         val h = host?.lowercase() ?: return false
 
@@ -131,30 +129,26 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = false
             displayZoomControls = false
 
+            /*
+             * Keep navigation in this WebView.
+             */
             setSupportMultipleWindows(false)
 
             userAgentString =
-                "$userAgentString SS-ENTERPRISES-ABHA-Android/4.5"
+                "$userAgentString SS-ENTERPRISES-ABHA-Android/4.6"
         }
 
 
-        CookieManager.getInstance().setAcceptCookie(true)
+        CookieManager
+            .getInstance()
+            .setAcceptCookie(true)
 
-        CookieManager.getInstance()
-            .setAcceptThirdPartyCookies(webView, true)
-
-
-        /*
-         * JavaScript bridge.
-         *
-         * If ABHA page creates intent:// through a
-         * clickable link, JavaScript will catch it
-         * before WebView tries to load it.
-         */
-        webView.addJavascriptInterface(
-            AbhaBridge(),
-            "SSABHA"
-        )
+        CookieManager
+            .getInstance()
+            .setAcceptThirdPartyCookies(
+                webView,
+                true
+            )
 
 
         webView.webViewClient =
@@ -162,125 +156,88 @@ class MainActivity : AppCompatActivity() {
 
 
                 /*
-                 * Normal navigation interception.
+                 * Android 7+
                  */
                 override fun shouldOverrideUrlLoading(
                     view: WebView,
                     request: WebResourceRequest
                 ): Boolean {
 
-                    return handleNavigation(
+                    return processUrl(
                         request.url.toString()
                     )
                 }
 
 
+                /*
+                 * Older Android compatibility
+                 */
                 @Suppress("DEPRECATION")
                 override fun shouldOverrideUrlLoading(
                     view: WebView,
                     url: String
                 ): Boolean {
 
-                    return handleNavigation(url)
+                    return processUrl(url)
                 }
 
 
                 /*
-                 * IMPORTANT BACKUP.
-                 *
-                 * This catches intent:// even if WebView
-                 * does not call shouldOverrideUrlLoading().
+                 * Extra navigation-level backup.
                  */
-                override fun shouldInterceptRequest(
+                override fun onPageStarted(
                     view: WebView,
-                    request: WebResourceRequest
-                ): WebResourceResponse? {
+                    url: String,
+                    favicon: android.graphics.Bitmap?
+                ) {
 
-                    val url =
-                        request.url.toString()
+                    if (isExternalAppUrl(url)) {
 
-                    if (isSpecialAbhaUrl(url)) {
-
-                        runOnUiThread {
-
-                            if (!isFinishing && !isDestroyed) {
-                                handleNavigation(url)
-                            }
+                        try {
+                            view.stopLoading()
+                        } catch (_: Exception) {
                         }
 
-                        /*
-                         * Return an empty response so WebView
-                         * does not continue trying to load
-                         * intent:// as a web page.
-                         */
-                        return WebResourceResponse(
-                            "text/plain",
-                            "UTF-8",
-                            ByteArrayInputStream(
-                                ByteArray(0)
-                            )
-                        )
+                        processUrl(url)
+
+                        return
                     }
 
-                    return super.shouldInterceptRequest(
+                    super.onPageStarted(
                         view,
-                        request
-                    )
-                }
-
-
-                @Suppress("DEPRECATION")
-                override fun shouldInterceptRequest(
-                    view: WebView,
-                    url: String
-                ): WebResourceResponse? {
-
-                    if (isSpecialAbhaUrl(url)) {
-
-                        runOnUiThread {
-
-                            if (!isFinishing && !isDestroyed) {
-                                handleNavigation(url)
-                            }
-                        }
-
-                        return WebResourceResponse(
-                            "text/plain",
-                            "UTF-8",
-                            ByteArrayInputStream(
-                                ByteArray(0)
-                            )
-                        )
-                    }
-
-                    return super.shouldInterceptRequest(
-                        view,
-                        url
+                        url,
+                        favicon
                     )
                 }
 
 
                 /*
-                 * JavaScript click interception is installed
-                 * after ABHA page loads.
+                 * Resource-level backup.
                  */
-                override fun onPageFinished(
+                override fun onLoadResource(
                     view: WebView,
                     url: String
                 ) {
 
-                    super.onPageFinished(
+                    if (isExternalAppUrl(url)) {
+
+                        try {
+                            view.stopLoading()
+                        } catch (_: Exception) {
+                        }
+
+                        processUrl(url)
+
+                        return
+                    }
+
+                    super.onLoadResource(
                         view,
                         url
                     )
-
-                    installAbhaIntentInterceptor(view)
                 }
 
 
-                /*
-                 * Final error backup.
-                 */
                 override fun onReceivedError(
                     view: WebView,
                     request: WebResourceRequest,
@@ -290,14 +247,9 @@ class MainActivity : AppCompatActivity() {
                     val url =
                         request.url.toString()
 
-                    if (isSpecialAbhaUrl(url)) {
+                    if (isExternalAppUrl(url)) {
 
-                        runOnUiThread {
-
-                            if (!isFinishing && !isDestroyed) {
-                                handleNavigation(url)
-                            }
-                        }
+                        processUrl(url)
 
                         return
                     }
@@ -325,8 +277,12 @@ class MainActivity : AppCompatActivity() {
                         rendererRecoveryInProgress = true
 
                         try {
+
                             view.stopLoading()
-                            view.loadUrl("about:blank")
+
+                            view.loadUrl(
+                                "about:blank"
+                            )
 
                             view.postDelayed({
 
@@ -397,7 +353,9 @@ class MainActivity : AppCompatActivity() {
                             origin.startsWith(
                                 "https://abha.abdm.gov.in"
                             ) ||
-                            origin.contains(".abdm.gov.in")
+                            origin.contains(
+                                ".abdm.gov.in"
+                            )
 
 
                         if (!allowedOrigin) {
@@ -418,21 +376,25 @@ class MainActivity : AppCompatActivity() {
                                     (
                                         resource ==
                                             PermissionRequest
-                                                .RESOURCE_VIDEO_CAPTURE &&
-                                        ContextCompat.checkSelfPermission(
-                                            this@MainActivity,
-                                            Manifest.permission.CAMERA
-                                        ) ==
+                                                .RESOURCE_VIDEO_CAPTURE
+                                        &&
+                                        ContextCompat
+                                            .checkSelfPermission(
+                                                this@MainActivity,
+                                                Manifest.permission.CAMERA
+                                            ) ==
                                             PackageManager.PERMISSION_GRANTED
                                     ) ||
                                     (
                                         resource ==
                                             PermissionRequest
-                                                .RESOURCE_AUDIO_CAPTURE &&
-                                        ContextCompat.checkSelfPermission(
-                                            this@MainActivity,
-                                            Manifest.permission.RECORD_AUDIO
-                                        ) ==
+                                                .RESOURCE_AUDIO_CAPTURE
+                                        &&
+                                        ContextCompat
+                                            .checkSelfPermission(
+                                                this@MainActivity,
+                                                Manifest.permission.RECORD_AUDIO
+                                            ) ==
                                             PackageManager.PERMISSION_GRANTED
                                     )
                                 }
@@ -441,9 +403,16 @@ class MainActivity : AppCompatActivity() {
 
                         try {
 
-                            if (resources.isNotEmpty()) {
-                                request.grant(resources)
+                            if (
+                                resources.isNotEmpty()
+                            ) {
+
+                                request.grant(
+                                    resources
+                                )
+
                             } else {
+
                                 request.deny()
                             }
 
@@ -460,13 +429,17 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onShowFileChooser(
                     webView: WebView?,
-                    callback: ValueCallback<Array<Uri>>?,
-                    params: FileChooserParams?
+                    callback:
+                    ValueCallback<Array<Uri>>?,
+                    params:
+                    FileChooserParams?
                 ): Boolean {
 
-                    fileCallback?.onReceiveValue(null)
+                    fileCallback
+                        ?.onReceiveValue(null)
 
-                    fileCallback = callback
+                    fileCallback =
+                        callback
 
 
                     val intent =
@@ -478,7 +451,9 @@ class MainActivity : AppCompatActivity() {
                         ?: Intent(
                             Intent.ACTION_GET_CONTENT
                         ).apply {
+
                             type = "*/*"
+
                             addCategory(
                                 Intent.CATEGORY_OPENABLE
                             )
@@ -496,7 +471,9 @@ class MainActivity : AppCompatActivity() {
 
                     } catch (_: Exception) {
 
-                        fileCallback?.onReceiveValue(null)
+                        fileCallback
+                            ?.onReceiveValue(null)
+
                         fileCallback = null
 
                         false
@@ -518,88 +495,11 @@ class MainActivity : AppCompatActivity() {
 
 
     /*
-     * JavaScript interceptor.
+     * Detect any Android application URL.
      *
-     * It watches links/clicks for intent:// and
-     * sends them directly to Android.
+     * This is NOT limited to ABHA.
      */
-    private fun installAbhaIntentInterceptor(
-        view: WebView
-    ) {
-
-        val js = """
-            (function() {
-
-                if (window.__SS_ABHA_INTENT_HOOK__) {
-                    return;
-                }
-
-                window.__SS_ABHA_INTENT_HOOK__ = true;
-
-                document.addEventListener(
-                    'click',
-                    function(e) {
-
-                        var el = e.target;
-
-                        while (
-                            el &&
-                            el.tagName !== 'A'
-                        ) {
-                            el = el.parentElement;
-                        }
-
-                        if (!el) {
-                            return;
-                        }
-
-                        var href =
-                            el.getAttribute('href');
-
-                        if (!href) {
-                            return;
-                        }
-
-                        href = String(href);
-
-                        if (
-                            href.indexOf('intent://') === 0 ||
-                            href.indexOf('abha://') === 0 ||
-                            href.indexOf('abha:') === 0
-                        ) {
-
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            try {
-                                window.SSABHA.open(
-                                    href
-                                );
-                            } catch (_) {
-                            }
-
-                            return false;
-                        }
-
-                    },
-                    true
-                );
-
-            })();
-        """.trimIndent()
-
-
-        try {
-            view.evaluateJavascript(
-                js,
-                null
-            )
-        } catch (_: Exception) {
-        }
-    }
-
-
-    private fun isSpecialAbhaUrl(
+    private fun isExternalAppUrl(
         url: String
     ): Boolean {
 
@@ -607,47 +507,84 @@ class MainActivity : AppCompatActivity() {
             url.trim().lowercase()
 
         return u.startsWith("intent://") ||
+                u.startsWith("android-app://") ||
                 u.startsWith("abha://") ||
-                u.startsWith("abha:")
+                u.startsWith("abha:") ||
+                u.startsWith("aadhaar://") ||
+                u.startsWith("aadhar://") ||
+                u.startsWith("face://")
     }
 
 
-    private fun handleNavigation(
-        urlString: String
+    /*
+     * Main URL processor.
+     */
+    private fun processUrl(
+        url: String
     ): Boolean {
 
-        if (urlString.isBlank()) {
+        if (url.isBlank()) {
             return false
         }
 
 
-        val url =
-            urlString.trim()
+        val clean =
+            url.trim()
 
 
+        /*
+         * intent://
+         */
         if (
-            url.lowercase()
+            clean.lowercase()
                 .startsWith("intent://")
         ) {
 
-            return launchAbhaFromIntent(url)
+            return launchIntentUri(
+                clean
+            )
         }
 
 
+        /*
+         * android-app://
+         */
         if (
-            url.lowercase()
-                .startsWith("abha://") ||
-            url.lowercase()
-                .startsWith("abha:")
+            clean.lowercase()
+                .startsWith("android-app://")
         ) {
 
-            return launchAbhaDirect(url)
+            return launchAndroidAppUri(
+                clean
+            )
+        }
+
+
+        /*
+         * Other direct custom schemes.
+         */
+        if (
+            clean.lowercase()
+                .startsWith("abha://") ||
+            clean.lowercase()
+                .startsWith("abha:") ||
+            clean.lowercase()
+                .startsWith("aadhaar://") ||
+            clean.lowercase()
+                .startsWith("aadhar://") ||
+            clean.lowercase()
+                .startsWith("face://")
+        ) {
+
+            return launchCustomScheme(
+                clean
+            )
         }
 
 
         val uri =
             try {
-                Uri.parse(url)
+                Uri.parse(clean)
             } catch (_: Exception) {
                 return false
             }
@@ -658,14 +595,20 @@ class MainActivity : AppCompatActivity() {
                 ?: return false
 
 
+        /*
+         * Normal website.
+         */
         if (
             scheme == "http" ||
             scheme == "https"
         ) {
 
             if (
-                isAllowedWebHost(uri.host)
+                isAllowedWebHost(
+                    uri.host
+                )
             ) {
+
                 return false
             }
 
@@ -693,74 +636,212 @@ class MainActivity : AppCompatActivity() {
 
 
     /*
-     * Parse intent:// only to confirm that it is
-     * an ABHA intent, then launch ABHA package.
+     * Generic intent:// parser.
      *
-     * We intentionally do NOT ask WebView to load
-     * the intent URL.
+     * IMPORTANT:
+     *
+     * We do not hard-code only in.ndhm.phr.
+     *
+     * Whatever package/action/data is supplied by
+     * the website is passed to Android.
      */
-    private fun launchAbhaFromIntent(
+    private fun launchIntentUri(
         url: String
     ): Boolean {
 
-        if (launchingAbha) {
+        if (openingExternalApp) {
             return true
         }
 
-        launchingAbha = true
+
+        openingExternalApp = true
 
 
         try {
 
-            val parsed =
+            val parsedIntent =
                 try {
+
                     Intent.parseUri(
                         url,
                         Intent.URI_INTENT_SCHEME
                     )
+
                 } catch (_: Exception) {
+
                     null
                 }
 
 
-            val packageName =
-                parsed?.`package`
+            if (parsedIntent == null) {
 
-
-            if (
-                packageName != null &&
-                packageName != abhaPackage
-            ) {
-
-                launchingAbha = false
+                openingExternalApp = false
 
                 return false
             }
 
 
-            return launchInstalledAbha()
+            /*
+             * Preserve the exact intent generated by
+             * the website.
+             */
+            parsedIntent.addCategory(
+                Intent.CATEGORY_BROWSABLE
+            )
+
+
+            /*
+             * First try the exact Intent.
+             */
+            try {
+
+                startActivity(
+                    parsedIntent
+                )
+
+                return true
+
+            } catch (
+                _: ActivityNotFoundException
+            ) {
+            } catch (_: Exception) {
+            }
+
+
+            /*
+             * If exact Intent failed, use the package
+             * specified inside #Intent;package=...
+             */
+            val packageName =
+                parsedIntent.`package`
+
+
+            if (
+                !packageName.isNullOrBlank()
+            ) {
+
+                try {
+
+                    val launchIntent =
+                        packageManager
+                            .getLaunchIntentForPackage(
+                                packageName
+                            )
+
+
+                    if (
+                        launchIntent != null
+                    ) {
+
+                        launchIntent.addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK
+                        )
+
+                        startActivity(
+                            launchIntent
+                        )
+
+                        return true
+                    }
+
+                } catch (_: Exception) {
+                }
+            }
+
+
+            /*
+             * Final generic fallback:
+             * let Android resolve the underlying
+             * data URI.
+             */
+            try {
+
+                val data =
+                    parsedIntent.data
+
+
+                if (data != null) {
+
+                    val fallback =
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            data
+                        )
+
+                    if (
+                        !packageName.isNullOrBlank()
+                    ) {
+
+                        fallback.setPackage(
+                            packageName
+                        )
+                    }
+
+                    startActivity(
+                        fallback
+                    )
+
+                    return true
+                }
+
+            } catch (_: Exception) {
+            }
+
+
+            return false
 
         } finally {
 
             webView.postDelayed({
 
-                launchingAbha = false
+                openingExternalApp = false
 
-            }, 1500)
+            }, 1200)
         }
     }
 
 
-    private fun launchAbhaDirect(
+    /*
+     * android-app://package/...
+     */
+    private fun launchAndroidAppUri(
         url: String
     ): Boolean {
 
-        if (launchingAbha) {
-            return true
+        return try {
+
+            val intent =
+                Intent.parseUri(
+                    url,
+                    Intent.URI_INTENT_SCHEME
+                )
+
+            intent.addCategory(
+                Intent.CATEGORY_BROWSABLE
+            )
+
+            startActivity(intent)
+
+            true
+
+        } catch (_: Exception) {
+
+            false
         }
+    }
 
-        launchingAbha = true
 
+    /*
+     * Direct custom scheme.
+     *
+     * Example:
+     * abha://...
+     * aadhaar://...
+     * face://...
+     */
+    private fun launchCustomScheme(
+        url: String
+    ): Boolean {
 
         return try {
 
@@ -772,108 +853,18 @@ class MainActivity : AppCompatActivity() {
                 Intent(
                     Intent.ACTION_VIEW,
                     uri
-                ).apply {
-
-                    setPackage(abhaPackage)
-
-                    addCategory(
-                        Intent.CATEGORY_BROWSABLE
-                    )
-                }
-
-
-            try {
-
-                startActivity(intent)
-
-                true
-
-            } catch (_: ActivityNotFoundException) {
-
-                launchInstalledAbha()
-
-            } catch (_: Exception) {
-
-                launchInstalledAbha()
-            }
-
-        } finally {
-
-            webView.postDelayed({
-
-                launchingAbha = false
-
-            }, 1500)
-        }
-    }
-
-
-    /*
-     * Directly launch the installed ABHA app.
-     */
-    private fun launchInstalledAbha(): Boolean {
-
-        return try {
-
-            val launchIntent =
-                packageManager
-                    .getLaunchIntentForPackage(
-                        abhaPackage
-                    )
-
-
-            if (launchIntent != null) {
-
-                launchIntent.addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK
                 )
 
-                startActivity(
-                    launchIntent
-                )
 
-                true
-
-            } else {
-
-                openAbhaPlayStore()
-            }
-
-        } catch (_: Exception) {
-
-            openAbhaPlayStore()
-        }
-    }
-
-
-    private fun openAbhaPlayStore(): Boolean {
-
-        return try {
-
-            try {
-
-                startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse(
-                            "market://details?id=$abhaPackage"
-                        )
-                    )
-                )
-
-            } catch (_: ActivityNotFoundException) {
-
-                startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse(
-                            "https://play.google.com/store/apps/details?id=$abhaPackage"
-                        )
-                    )
-                )
-            }
+            startActivity(intent)
 
             true
+
+        } catch (
+            _: ActivityNotFoundException
+        ) {
+
+            false
 
         } catch (_: Exception) {
 
@@ -899,40 +890,15 @@ class MainActivity : AppCompatActivity() {
             }
 
 
-        if (needed.isNotEmpty()) {
+        if (
+            needed.isNotEmpty()
+        ) {
 
             ActivityCompat.requestPermissions(
                 this,
                 needed.toTypedArray(),
                 permissionRequestCode
             )
-        }
-    }
-
-
-    /*
-     * JavaScript → Android bridge.
-     */
-    inner class AbhaBridge {
-
-        @JavascriptInterface
-        fun open(url: String?) {
-
-            if (url.isNullOrBlank()) {
-                return
-            }
-
-
-            runOnUiThread {
-
-                if (
-                    !isFinishing &&
-                    !isDestroyed
-                ) {
-
-                    handleNavigation(url)
-                }
-            }
         }
     }
 
@@ -954,7 +920,8 @@ class MainActivity : AppCompatActivity() {
 
 
         if (
-            requestCode == fileRequestCode
+            requestCode ==
+            fileRequestCode
         ) {
 
             val results =
@@ -977,9 +944,10 @@ class MainActivity : AppCompatActivity() {
                 }
 
 
-            fileCallback?.onReceiveValue(
-                results
-            )
+            fileCallback
+                ?.onReceiveValue(
+                    results
+                )
 
             fileCallback = null
         }
@@ -991,18 +959,23 @@ class MainActivity : AppCompatActivity() {
     ) {
 
         try {
-            webView.saveState(outState)
+            webView.saveState(
+                outState
+            )
         } catch (_: Exception) {
         }
 
-        super.onSaveInstanceState(outState)
+        super.onSaveInstanceState(
+            outState
+        )
     }
 
 
     override fun onDestroy() {
 
         try {
-            fileCallback?.onReceiveValue(null)
+            fileCallback
+                ?.onReceiveValue(null)
         } catch (_: Exception) {
         }
 
